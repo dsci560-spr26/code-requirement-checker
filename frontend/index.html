@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Code-Requirement Checker</title>
+<style>
+/* ── Reset & Variables ──────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #232734;
+  --border: #2e3345;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --accent: #6366f1;
+  --accent-light: #818cf8;
+  --green: #22c55e;
+  --yellow: #eab308;
+  --red: #ef4444;
+  --orange: #f97316;
+  --blue: #3b82f6;
+  --purple: #a855f7;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ── Layout ─────────────────────────────────────────── */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.header h1 {
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.header .spacer { flex: 1; }
+
+.main {
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Shared ─────────────────────────────────────────── */
+.panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+}
+
+.panel:last-child { border-right: none; }
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--surface);
+}
+
+.panel-header h2 { font-size: 14px; font-weight: 600; }
+
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.btn {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-light); }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+.btn-outline:hover { border-color: var(--accent); color: var(--text); }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+input[type="text"], textarea, select {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+textarea { resize: vertical; font-family: 'SF Mono', 'Fira Code', monospace; min-height: 60px; }
+
+/* ── Project Selector ───────────────────────────────── */
+.project-select {
+  padding: 6px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  min-width: 200px;
+}
+
+/* ── Project Modal ──────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  width: 500px;
+  max-width: 90vw;
+}
+.modal h3 { margin-bottom: 16px; }
+.modal .field { margin-bottom: 12px; }
+.modal label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+.modal .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+/* ── Kanban ─────────────────────────────────────────── */
+.project-bg {
+  padding: 12px;
+  margin-bottom: 8px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  border-left: 3px solid var(--accent);
+}
+
+.kanban-columns {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+
+.kanban-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.kanban-col-header {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.kanban-col-header .count {
+  background: var(--surface2);
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+.col-todo .kanban-col-header { color: var(--text-dim); background: rgba(148,163,184,0.1); }
+.col-in_progress .kanban-col-header { color: var(--yellow); background: rgba(234,179,8,0.1); }
+.col-done .kanban-col-header { color: var(--green); background: rgba(34,197,94,0.1); }
+
+.kanban-cards {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.req-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  cursor: default;
+  transition: border-color 0.15s;
+}
+.req-card:hover { border-color: var(--accent); }
+
+.req-card .req-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.req-card .req-id {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-light);
+}
+.priority-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.priority-high { background: rgba(239,68,68,0.15); color: var(--red); }
+.priority-medium { background: rgba(234,179,8,0.15); color: var(--yellow); }
+.priority-low { background: rgba(34,197,94,0.15); color: var(--green); }
+
+.req-card .req-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+.req-card .req-desc { font-size: 11px; color: var(--text-dim); line-height: 1.4; }
+
+/* Add req form */
+.add-req-form {
+  background: var(--surface2);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+.add-req-form .row { display: flex; gap: 6px; }
+.add-req-form .row > * { flex: 1; }
+
+/* ── Chat ───────────────────────────────────────────── */
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-msg {
+  display: flex;
+  gap: 10px;
+  max-width: 85%;
+}
+.chat-msg.pm { align-self: flex-start; }
+.chat-msg.engineer { align-self: flex-start; }
+.chat-msg.ai { align-self: flex-start; }
+
+.chat-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.chat-msg.pm .chat-avatar { background: rgba(59,130,246,0.2); color: var(--blue); }
+.chat-msg.engineer .chat-avatar { background: rgba(34,197,94,0.2); color: var(--green); }
+.chat-msg.ai .chat-avatar { background: rgba(168,85,247,0.2); color: var(--purple); }
+
+.chat-bubble {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  min-width: 0;
+}
+.chat-msg.ai .chat-bubble { border-color: rgba(168,85,247,0.3); }
+
+.chat-bubble .role-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.chat-msg.pm .role-label { color: var(--blue); }
+.chat-msg.engineer .role-label { color: var(--green); }
+.chat-msg.ai .role-label { color: var(--purple); }
+
+.chat-bubble .msg-content {
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.chat-bubble .msg-content strong { font-weight: 600; }
+
+.chat-bubble .msg-time {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
+/* Analysis detail toggle */
+.analysis-toggle {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--accent-light);
+  cursor: pointer;
+  user-select: none;
+}
+.analysis-toggle:hover { text-decoration: underline; }
+
+.analysis-detail {
+  margin-top: 8px;
+  padding: 10px;
+  background: var(--bg);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.analysis-detail .score-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.score-ring {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  border: 3px solid;
+}
+.score-ring.high { border-color: var(--green); color: var(--green); }
+.score-ring.medium { border-color: var(--yellow); color: var(--yellow); }
+.score-ring.low { border-color: var(--red); color: var(--red); }
+
+.detail-req {
+  padding: 8px;
+  margin-bottom: 6px;
+  background: var(--surface2);
+  border-radius: 6px;
+  border-left: 3px solid var(--border);
+}
+.detail-req.status-match { border-left-color: var(--green); }
+.detail-req.status-partial { border-left-color: var(--yellow); }
+.detail-req.status-gap { border-left-color: var(--red); }
+.detail-req.status-clarification_needed { border-left-color: var(--orange); }
+
+.detail-req .dr-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.detail-req .dr-head .status-tag {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.status-tag.match { background: rgba(34,197,94,0.15); color: var(--green); }
+.status-tag.partial { background: rgba(234,179,8,0.15); color: var(--yellow); }
+.status-tag.gap { background: rgba(239,68,68,0.15); color: var(--red); }
+.status-tag.clarification_needed { background: rgba(249,115,22,0.15); color: var(--orange); }
+
+.detail-req ul { padding-left: 16px; margin: 2px 0; }
+.detail-req li { font-size: 11px; color: var(--text-dim); }
+.detail-req .gap-text { color: var(--red); }
+
+/* Chat input area */
+.chat-input-area {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.role-toggle {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+  background: var(--bg);
+  border-radius: 6px;
+  padding: 3px;
+  width: fit-content;
+}
+.role-toggle button {
+  padding: 4px 14px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.role-toggle button.active-pm { background: var(--blue); color: #fff; }
+.role-toggle button.active-engineer { background: var(--green); color: #fff; }
+
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.chat-input-row textarea {
+  flex: 1;
+  min-height: 40px;
+  max-height: 150px;
+}
+.chat-input-row .send-btn {
+  padding: 8px 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.chat-input-row .send-btn:hover { background: var(--accent-light); }
+.chat-input-row .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Git mini form */
+.git-form {
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--bg);
+  border-radius: 6px;
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+}
+.git-form .field { flex: 1; }
+.git-form label { font-size: 11px; color: var(--text-dim); display: block; margin-bottom: 2px; }
+.git-form input { font-size: 12px; padding: 6px 8px; }
+
+/* Typing indicator */
+.typing-indicator {
+  display: flex;
+  gap: 10px;
+  align-self: flex-start;
+  max-width: 85%;
+}
+.typing-dots {
+  display: flex;
+  gap: 4px;
+  padding: 14px;
+  background: var(--surface2);
+  border: 1px solid rgba(168,85,247,0.3);
+  border-radius: var(--radius-sm);
+}
+.typing-dots span {
+  width: 6px;
+  height: 6px;
+  background: var(--purple);
+  border-radius: 50%;
+  animation: bounce 1.2s infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: var(--text-dim);
+  font-size: 13px;
+  text-align: center;
+  gap: 8px;
+}
+.empty-state .icon { font-size: 32px; opacity: 0.5; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- ── Header ──────────────────────────────────────── -->
+  <div class="app">
+    <div class="header">
+      <h1>Code-Requirement Checker</h1>
+      <div class="spacer"></div>
+      <select class="project-select" v-model="currentProjectId" @change="onProjectChange">
+        <option disabled value="">Select Project...</option>
+        <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
+      </select>
+      <button class="btn btn-primary btn-sm" @click="showProjectModal = true">+ New Project</button>
+    </div>
+
+    <!-- ── Main: Kanban + Chat ───────────────────────── -->
+    <div class="main" v-if="currentProjectId">
+      <!-- Kanban Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Requirements</h2>
+          <button class="btn btn-outline btn-sm" @click="showAddReq = !showAddReq">+ Add</button>
+        </div>
+        <div class="panel-body" style="display:flex;flex-direction:column;gap:8px;">
+          <!-- Project Background -->
+          <div class="project-bg" v-if="currentProject">
+            <strong>Background:</strong> {{ currentProject.background }}
+          </div>
+
+          <!-- Add Requirement Form -->
+          <div class="add-req-form" v-if="showAddReq">
+            <input type="text" v-model="newReq.title" placeholder="Requirement title" />
+            <textarea v-model="newReq.description" placeholder="Description..." rows="2"></textarea>
+            <div class="row">
+              <select v-model="newReq.priority">
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+              <button class="btn btn-primary btn-sm" @click="addRequirement" :disabled="!newReq.title">Save</button>
+              <button class="btn btn-outline btn-sm" @click="showAddReq = false">Cancel</button>
+            </div>
+          </div>
+
+          <!-- Kanban Columns -->
+          <div class="kanban-columns" v-if="requirements.length">
+            <div class="kanban-col col-todo">
+              <div class="kanban-col-header">Todo <span class="count">{{ todoReqs.length }}</span></div>
+              <div class="kanban-cards">
+                <div class="req-card" v-for="r in todoReqs" :key="r.id">
+                  <div class="req-top">
+                    <span class="req-id">{{ r.id }}</span>
+                    <span class="priority-badge" :class="'priority-' + r.priority">{{ r.priority }}</span>
+                  </div>
+                  <div class="req-title">{{ r.title }}</div>
+                  <div class="req-desc">{{ r.description.length > 80 ? r.description.slice(0, 80) + '...' : r.description }}</div>
+                </div>
+              </div>
+            </div>
+            <div class="kanban-col col-in_progress">
+              <div class="kanban-col-header">In Progress <span class="count">{{ inProgressReqs.length }}</span></div>
+              <div class="kanban-cards">
+                <div class="req-card" v-for="r in inProgressReqs" :key="r.id">
+                  <div class="req-top">
+                    <span class="req-id">{{ r.id }}</span>
+                    <span class="priority-badge" :class="'priority-' + r.priority">{{ r.priority }}</span>
+                  </div>
+                  <div class="req-title">{{ r.title }}</div>
+                  <div class="req-desc">{{ r.description.length > 80 ? r.description.slice(0, 80) + '...' : r.description }}</div>
+                </div>
+              </div>
+            </div>
+            <div class="kanban-col col-done">
+              <div class="kanban-col-header">Done <span class="count">{{ doneReqs.length }}</span></div>
+              <div class="kanban-cards">
+                <div class="req-card" v-for="r in doneReqs" :key="r.id">
+                  <div class="req-top">
+                    <span class="req-id">{{ r.id }}</span>
+                    <span class="priority-badge" :class="'priority-' + r.priority">{{ r.priority }}</span>
+                  </div>
+                  <div class="req-title">{{ r.title }}</div>
+                  <div class="req-desc">{{ r.description.length > 80 ? r.description.slice(0, 80) + '...' : r.description }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="empty-state" v-else-if="!showAddReq">
+            <div class="icon">📋</div>
+            <div>No requirements yet. Click "+ Add" to create one.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Team Chat</h2>
+          <button class="btn btn-outline btn-sm" @click="showGitForm = !showGitForm">Git Analyze</button>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-messages" ref="chatContainer">
+          <div class="empty-state" v-if="!messages.length && !chatLoading">
+            <div class="icon">💬</div>
+            <div>Start a conversation. Switch roles to chat as PM or Engineer.</div>
+            <div style="font-size:11px;">Paste code/diff as Engineer and AI will analyze it against requirements.</div>
+          </div>
+
+          <div v-for="m in messages" :key="m.id" class="chat-msg" :class="m.role">
+            <div class="chat-avatar">
+              <span v-if="m.role === 'pm'">PM</span>
+              <span v-else-if="m.role === 'engineer'">SE</span>
+              <span v-else>AI</span>
+            </div>
+            <div class="chat-bubble">
+              <div class="role-label">{{ m.role === 'pm' ? 'Product Manager' : m.role === 'engineer' ? 'Engineer' : 'AI Assistant' }}</div>
+              <div class="msg-content" v-html="formatMsg(m.content)"></div>
+              <div class="msg-time">{{ formatTime(m.timestamp) }}</div>
+
+              <!-- Analysis detail toggle -->
+              <template v-if="m.analysis_result">
+                <div class="analysis-toggle" @click="toggleDetail(m.id)">
+                  {{ expandedDetails[m.id] ? '▼ Hide Details' : '▶ View Detailed Analysis' }}
+                </div>
+                <div class="analysis-detail" v-if="expandedDetails[m.id]">
+                  <div class="score-row">
+                    <div class="score-ring" :class="scoreClass(m.analysis_result.overall_score)">
+                      {{ m.analysis_result.overall_score }}
+                    </div>
+                    <div>
+                      <div style="font-weight:600;">{{ m.analysis_result.summary }}</div>
+                    </div>
+                  </div>
+                  <div v-for="rr in m.analysis_result.requirements" :key="rr.requirement_id" class="detail-req" :class="'status-' + rr.status">
+                    <div class="dr-head">
+                      <span style="font-weight:600;">{{ rr.requirement_id }}</span>
+                      <span class="status-tag" :class="rr.status">{{ formatStatus(rr.status) }}</span>
+                      <span style="color:var(--text-dim);">{{ rr.confidence }}%</span>
+                    </div>
+                    <div style="font-size:12px;margin-bottom:4px;">{{ rr.requirement_title }}</div>
+                    <div v-if="rr.evidence && rr.evidence.length">
+                      <div style="font-size:11px;color:var(--text-dim);font-weight:600;">Evidence:</div>
+                      <ul><li v-for="e in rr.evidence">{{ e }}</li></ul>
+                    </div>
+                    <div v-if="rr.gaps && rr.gaps.length">
+                      <div style="font-size:11px;color:var(--red);font-weight:600;">Gaps:</div>
+                      <ul><li v-for="g in rr.gaps" class="gap-text">{{ g }}</li></ul>
+                    </div>
+                    <div v-if="rr.suggestions && rr.suggestions.length">
+                      <div style="font-size:11px;color:var(--text-dim);font-weight:600;">Suggestions:</div>
+                      <ul><li v-for="s in rr.suggestions">{{ s }}</li></ul>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Typing indicator -->
+          <div class="typing-indicator" v-if="chatLoading">
+            <div class="chat-avatar" style="background:rgba(168,85,247,0.2);color:var(--purple);">AI</div>
+            <div class="typing-dots"><span></span><span></span><span></span></div>
+          </div>
+        </div>
+
+        <!-- Git mini form -->
+        <div class="git-form" v-if="showGitForm" style="margin:0 12px;">
+          <div class="field">
+            <label>Repo Path</label>
+            <input type="text" v-model="gitRepoPath" placeholder="/path/to/repo" />
+          </div>
+          <div class="field">
+            <label>Commit SHA (optional)</label>
+            <input type="text" v-model="gitCommitSha" placeholder="HEAD" />
+          </div>
+          <button class="btn btn-primary btn-sm" @click="analyzeGit" :disabled="!gitRepoPath || chatLoading">Analyze</button>
+        </div>
+
+        <!-- Input -->
+        <div class="chat-input-area">
+          <div class="role-toggle">
+            <button :class="{ 'active-pm': chatRole === 'pm' }" @click="chatRole = 'pm'">PM</button>
+            <button :class="{ 'active-engineer': chatRole === 'engineer' }" @click="chatRole = 'engineer'">Engineer</button>
+          </div>
+          <div class="chat-input-row">
+            <textarea
+              v-model="chatInput"
+              :placeholder="chatRole === 'engineer' ? 'Paste code/diff or ask a question...' : 'Ask about requirements, progress...'"
+              @keydown.enter.exact.prevent="sendMessage"
+              rows="1"
+            ></textarea>
+            <button class="send-btn" @click="sendMessage" :disabled="!chatInput.trim() || chatLoading">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- No project selected -->
+    <div class="empty-state" v-else style="flex:1;">
+      <div class="icon">📁</div>
+      <div>Select a project or create a new one to get started.</div>
+    </div>
+  </div>
+
+  <!-- ── Project Modal ───────────────────────────────── -->
+  <div class="modal-overlay" v-if="showProjectModal" @click.self="showProjectModal = false">
+    <div class="modal">
+      <h3>Create New Project</h3>
+      <div class="field">
+        <label>Project Name</label>
+        <input type="text" v-model="newProject.name" placeholder="e.g., User System v2" />
+      </div>
+      <div class="field">
+        <label>Background</label>
+        <textarea v-model="newProject.background" placeholder="What problem does this project solve? What are the goals?" rows="4"></textarea>
+      </div>
+      <div class="actions">
+        <button class="btn btn-outline" @click="showProjectModal = false">Cancel</button>
+        <button class="btn btn-primary" @click="createProject" :disabled="!newProject.name">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script>
+const API = 'http://localhost:8000'
+
+const { createApp, ref, computed, watch, nextTick, reactive } = Vue
+
+createApp({
+  setup() {
+    // ── Project state ───────────────────────────────
+    const projects = ref([])
+    const currentProjectId = ref('')
+    const showProjectModal = ref(false)
+    const newProject = reactive({ name: '', background: '' })
+
+    const currentProject = computed(() =>
+      projects.value.find(p => p.id === currentProjectId.value)
+    )
+
+    // ── Requirement state ───────────────────────────
+    const requirements = ref([])
+    const showAddReq = ref(false)
+    const newReq = reactive({ title: '', description: '', priority: 'medium' })
+
+    const todoReqs = computed(() => requirements.value.filter(r => r.status === 'todo'))
+    const inProgressReqs = computed(() => requirements.value.filter(r => r.status === 'in_progress'))
+    const doneReqs = computed(() => requirements.value.filter(r => r.status === 'done'))
+
+    // ── Chat state ──────────────────────────────────
+    const messages = ref([])
+    const chatRole = ref('engineer')
+    const chatInput = ref('')
+    const chatLoading = ref(false)
+    const chatContainer = ref(null)
+    const expandedDetails = reactive({})
+
+    // Git form
+    const showGitForm = ref(false)
+    const gitRepoPath = ref('')
+    const gitCommitSha = ref('')
+
+    // ── API calls ───────────────────────────────────
+    async function fetchProjects() {
+      try {
+        const res = await fetch(`${API}/api/projects`)
+        const data = await res.json()
+        projects.value = data.projects
+        if (projects.value.length && !currentProjectId.value) {
+          currentProjectId.value = projects.value[0].id
+        }
+      } catch (e) { console.error('fetchProjects:', e) }
+    }
+
+    async function createProject() {
+      try {
+        const res = await fetch(`${API}/api/projects`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newProject.name, background: newProject.background }),
+        })
+        const p = await res.json()
+        projects.value.push(p)
+        currentProjectId.value = p.id
+        showProjectModal.value = false
+        newProject.name = ''
+        newProject.background = ''
+        fetchRequirements()
+        fetchMessages()
+      } catch (e) { console.error('createProject:', e) }
+    }
+
+    async function fetchRequirements() {
+      if (!currentProjectId.value) return
+      try {
+        const res = await fetch(`${API}/api/projects/${currentProjectId.value}/requirements`)
+        const data = await res.json()
+        requirements.value = data.requirements
+      } catch (e) { console.error('fetchRequirements:', e) }
+    }
+
+    async function addRequirement() {
+      if (!newReq.title) return
+      try {
+        await fetch(`${API}/api/projects/${currentProjectId.value}/requirements`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: newReq.title, description: newReq.description, priority: newReq.priority }),
+        })
+        newReq.title = ''
+        newReq.description = ''
+        newReq.priority = 'medium'
+        showAddReq.value = false
+        fetchRequirements()
+      } catch (e) { console.error('addRequirement:', e) }
+    }
+
+    async function fetchMessages() {
+      if (!currentProjectId.value) return
+      try {
+        const res = await fetch(`${API}/api/projects/${currentProjectId.value}/chat`)
+        const data = await res.json()
+        messages.value = data.messages
+        scrollToBottom()
+      } catch (e) { console.error('fetchMessages:', e) }
+    }
+
+    async function sendMessage() {
+      const text = chatInput.value.trim()
+      if (!text || chatLoading.value) return
+      chatInput.value = ''
+      chatLoading.value = true
+
+      try {
+        const res = await fetch(`${API}/api/projects/${currentProjectId.value}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role: chatRole.value, content: text }),
+        })
+        if (!res.ok) {
+          const err = await res.json()
+          alert('Error: ' + (err.detail || 'Unknown error'))
+          return
+        }
+        const data = await res.json()
+        messages.value.push(data.user_message)
+        messages.value.push(data.ai_message)
+
+        // If analysis happened, refresh kanban
+        if (data.ai_message.analysis_result) {
+          fetchRequirements()
+        }
+        scrollToBottom()
+      } catch (e) {
+        console.error('sendMessage:', e)
+        alert('Failed to send message')
+      } finally {
+        chatLoading.value = false
+      }
+    }
+
+    async function analyzeGit() {
+      if (!gitRepoPath.value || chatLoading.value) return
+      chatLoading.value = true
+      try {
+        const res = await fetch(`${API}/api/projects/${currentProjectId.value}/analyze/git`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ repo_path: gitRepoPath.value, commit_sha: gitCommitSha.value || null }),
+        })
+        if (!res.ok) {
+          const err = await res.json()
+          alert('Error: ' + (err.detail || 'Unknown error'))
+          return
+        }
+        const data = await res.json()
+        messages.value.push(data.engineer_message)
+        messages.value.push(data.ai_message)
+        fetchRequirements()
+        showGitForm.value = false
+        scrollToBottom()
+      } catch (e) {
+        console.error('analyzeGit:', e)
+        alert('Failed to analyze git repo')
+      } finally {
+        chatLoading.value = false
+      }
+    }
+
+    // ── Helpers ──────────────────────────────────────
+    function onProjectChange() {
+      fetchRequirements()
+      fetchMessages()
+    }
+
+    function scrollToBottom() {
+      nextTick(() => {
+        if (chatContainer.value) {
+          chatContainer.value.scrollTop = chatContainer.value.scrollHeight
+        }
+      })
+    }
+
+    function toggleDetail(msgId) {
+      expandedDetails[msgId] = !expandedDetails[msgId]
+    }
+
+    function scoreClass(score) {
+      if (score >= 70) return 'high'
+      if (score >= 40) return 'medium'
+      return 'low'
+    }
+
+    function formatStatus(s) {
+      return { match: 'Match', partial: 'Partial', gap: 'Gap', clarification_needed: 'Needs Clarification' }[s] || s
+    }
+
+    function formatTime(ts) {
+      if (!ts) return ''
+      const d = new Date(ts)
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+
+    function formatMsg(text) {
+      if (!text) return ''
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/`([^`]+)`/g, '<code style="background:var(--bg);padding:1px 4px;border-radius:3px;font-size:12px;">$1</code>')
+        .replace(/\n/g, '<br>')
+    }
+
+    // ── Init ────────────────────────────────────────
+    fetchProjects().then(() => {
+      if (currentProjectId.value) {
+        fetchRequirements()
+        fetchMessages()
+      }
+    })
+
+    return {
+      projects, currentProjectId, currentProject, showProjectModal, newProject,
+      requirements, showAddReq, newReq, todoReqs, inProgressReqs, doneReqs,
+      messages, chatRole, chatInput, chatLoading, chatContainer, expandedDetails,
+      showGitForm, gitRepoPath, gitCommitSha,
+      createProject, fetchRequirements, addRequirement, fetchMessages,
+      sendMessage, analyzeGit, onProjectChange, toggleDetail,
+      scoreClass, formatStatus, formatTime, formatMsg,
+    }
+  }
+}).mount('#app')
+</script>
+</body>
+</html>
