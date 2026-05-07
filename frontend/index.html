@@ -3,984 +3,2436 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Code-Requirement Checker</title>
+<title>TechBridge AI · Code-Requirement Checker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* ── Reset & Variables ──────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
-  --bg: #0f1117;
-  --surface: #1a1d27;
-  --surface2: #232734;
-  --border: #2e3345;
-  --text: #e2e8f0;
-  --text-dim: #94a3b8;
-  --accent: #6366f1;
-  --accent-light: #818cf8;
-  --green: #22c55e;
-  --yellow: #eab308;
-  --red: #ef4444;
-  --orange: #f97316;
-  --blue: #3b82f6;
-  --purple: #a855f7;
-  --radius: 12px;
-  --radius-sm: 8px;
+  --bg: #FFFFFF;
+  --surface: #F8FAFC;
+  --surface-2: #F1F5F9;
+  --border: #E2E8F0;
+  --border-strong: #CBD5E1;
+  --ink: #0F172A;
+  --ink-2: #334155;
+  --ink-dim: #64748B;
+  --ink-faint: #94A3B8;
+  --cyan: #0891B2;
+  --cyan-soft: #06B6D4;
+  --cyan-tint: #ECFEFF;
+  --cyan-bd: #A5F3FC;
+  --amber: #D97706;
+  --amber-soft: #F59E0B;
+  --amber-tint: #FEF3C7;
+  --amber-bd: #FCD34D;
+  --purple: #7C3AED;
+  --purple-soft: #8B5CF6;
+  --purple-tint: #F5F3FF;
+  --purple-bd: #DDD6FE;
+  --green: #059669;
+  --green-soft: #10B981;
+  --green-tint: #ECFDF5;
+  --green-bd: #A7F3D0;
+  --red: #DC2626;
+  --red-soft: #EF4444;
+  --red-tint: #FEF2F2;
+  --red-bd: #FECACA;
+  --blue: #2563EB;
+  --blue-tint: #EFF6FF;
+  --radius-sm: 6px; --radius: 10px; --radius-lg: 14px; --radius-xl: 18px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px -4px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 1px 2px rgba(15, 23, 42, 0.04), 0 16px 40px -16px rgba(15, 23, 42, 0.18);
 }
-
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; padding: 0; height: 100%; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  line-height: 1.5;
-  min-height: 100vh;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg); color: var(--ink);
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
 }
+.mono { font-family: 'JetBrains Mono', monospace; }
 
-/* ── Layout ─────────────────────────────────────────── */
-.app {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 24px;
-  background: var(--surface);
+/* ───── App shell ───── */
+.app { min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); }
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 0 20px; height: 60px;
+  background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 14px; letter-spacing: -0.01em; white-space: nowrap; flex-shrink: 0; }
+.brand .brand-name { white-space: nowrap; }
+.brand .logo {
+  width: 24px; height: 24px; border-radius: 6px;
+  background: linear-gradient(135deg, var(--cyan-soft), var(--amber-soft));
+  color: #fff; display: inline-flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800;
+  box-shadow: 0 4px 10px -2px rgba(8, 145, 178, 0.4);
+}
+.brand .ver { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-faint); padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; margin-left: 4px; }
+
+.nav { display: flex; gap: 2px; background: var(--surface); border: 1px solid var(--border); padding: 3px; border-radius: 10px; }
+.nav button {
+  border: 0; background: transparent; padding: 7px 12px;
+  font-family: inherit; font-size: 12.5px; font-weight: 500;
+  color: var(--ink-dim); border-radius: 7px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 7px;
+  transition: all 120ms ease; white-space: nowrap;
+}
+.nav button:hover { color: var(--ink); }
+.nav button.active { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 0 0 1px var(--border); }
+.nav button .num { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-faint); background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+.nav button.active .num { background: var(--cyan-tint); color: var(--cyan); }
+
+.topbar .right { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--ink-dim); flex-shrink: 0; }
+.topbar .project-select {
+  padding: 5px 10px; background: #fff; border: 1px solid var(--border);
+  border-radius: 8px; color: var(--ink); font-size: 12.5px; cursor: pointer;
+  font-family: inherit; min-width: 180px;
+}
+.topbar .user-input {
+  padding: 5px 10px; background: #fff; border: 1px solid var(--border);
+  border-radius: 8px; color: var(--ink); font-size: 12.5px; outline: none;
+  font-family: inherit; width: 100px;
+}
+.topbar .user-input:focus { border-color: var(--cyan); }
+
+@media (max-width: 1280px) {
+  .topbar .pulse-status { display: none; }
+}
+@media (max-width: 1120px) {
+  .nav button .num { display: none; }
+  .nav button { padding: 7px 10px; font-size: 12px; }
+  .topbar { padding: 0 14px; }
 }
 
-.header h1 {
-  font-size: 16px;
-  font-weight: 600;
-  white-space: nowrap;
+.pulse-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; background: var(--green-tint); border: 1px solid var(--green-bd);
+  color: var(--green); border-radius: 999px; font-size: 11px; font-weight: 500;
+}
+.pulse-status .dot { width: 6px; height: 6px; background: var(--green-soft); border-radius: 50%; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); animation: pulse-dot 2s infinite; }
+@keyframes pulse-dot {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
-.header .spacer { flex: 1; }
-
-.main {
-  display: grid;
-  grid-template-columns: 2fr 3fr;
-  flex: 1;
-  overflow: hidden;
+/* ───── Avatars ───── */
+.avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600;
+  color: #fff; flex-shrink: 0; border: 2px solid #fff;
 }
+.avatar.cyan   { background: linear-gradient(135deg, #06B6D4, #0891B2); }
+.avatar.blue   { background: linear-gradient(135deg, #3B82F6, #2563EB); }
+.avatar.purple { background: linear-gradient(135deg, #8B5CF6, #7C3AED); }
+.avatar.green  { background: linear-gradient(135deg, #10B981, #059669); }
+.avatar.amber  { background: linear-gradient(135deg, #F59E0B, #D97706); }
+.avatar.sm { width: 22px; height: 22px; font-size: 9.5px; }
+.avatar.lg { width: 36px; height: 36px; font-size: 13px; }
 
-/* ── Shared ─────────────────────────────────────────── */
-.panel {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border-right: 1px solid var(--border);
-}
-
-.panel:last-child { border-right: none; }
-
-.panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-  background: var(--surface);
-}
-
-.panel-header h2 { font-size: 14px; font-weight: 600; }
-
-.panel-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px;
-}
-
+/* ───── Buttons ───── */
 .btn {
-  padding: 6px 14px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.15s;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 14px; border-radius: 8px; font-family: inherit;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  border: 1px solid transparent; transition: all 120ms ease; white-space: nowrap;
 }
-
-.btn-primary { background: var(--accent); color: #fff; }
-.btn-primary:hover { background: var(--accent-light); }
-.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
-.btn-outline:hover { border-color: var(--accent); color: var(--text); }
-.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-primary { background: var(--cyan); color: #fff; border-color: var(--cyan);
+  box-shadow: 0 1px 2px rgba(8, 145, 178, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15); }
+.btn-primary:hover { background: #0E7490; }
+.btn-outline { background: #fff; color: var(--ink); border-color: var(--border-strong); }
+.btn-outline:hover { background: var(--surface); }
+.btn-ghost { background: transparent; color: var(--ink-2); }
+.btn-ghost:hover { background: var(--surface); color: var(--ink); }
+.btn-danger { background: transparent; color: var(--red); }
+.btn-danger:hover { background: var(--red-tint); }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-input[type="text"], textarea, select {
-  width: 100%;
-  padding: 8px 12px;
-  background: var(--bg);
-  border: 1px solid var(--border);
+/* ───── Pills ───── */
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 9px; border-radius: 999px;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.04em; text-transform: uppercase; font-weight: 500;
+  border: 1px solid transparent; white-space: nowrap;
+}
+.pill .pdot { width: 5px; height: 5px; border-radius: 50%; }
+.pill.amber { color: var(--amber); background: var(--amber-tint); border-color: var(--amber-bd); }
+.pill.amber .pdot { background: var(--amber-soft); }
+.pill.cyan  { color: var(--cyan); background: var(--cyan-tint); border-color: var(--cyan-bd); }
+.pill.cyan  .pdot { background: var(--cyan-soft); }
+.pill.green { color: var(--green); background: var(--green-tint); border-color: var(--green-bd); }
+.pill.green .pdot { background: var(--green-soft); }
+.pill.purple { color: var(--purple); background: var(--purple-tint); border-color: var(--purple-bd); }
+.pill.purple .pdot { background: var(--purple-soft); }
+.pill.gray  { color: var(--ink-dim); background: var(--surface); border-color: var(--border); }
+.pill.gray  .pdot { background: var(--ink-faint); }
+
+/* ───── Project chips ───── */
+.proj {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 8px; border-radius: 6px;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.01em;
+  border: 1px solid transparent; white-space: nowrap; line-height: 1.2;
+}
+.proj .pdot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.proj.lg { font-size: 12px; padding: 5px 10px; }
+.proj.auth    { color: #0891B2; background: #ECFEFF; border-color: #A5F3FC; }
+.proj.auth    .pdot { background: #06B6D4; }
+
+.priority {
+  display: inline-block; padding: 2px 6px; border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  font-weight: 600; letter-spacing: 0.04em;
+}
+.priority.p0 { color: var(--red); background: var(--red-tint); }
+.priority.p1 { color: var(--amber); background: var(--amber-tint); }
+.priority.p2 { color: var(--ink-dim); background: var(--surface); }
+
+.label-mono {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-faint); font-weight: 500;
+}
+
+.pulse-cyan {
+  width: 8px; height: 8px; background: var(--cyan-soft); border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.5);
+  animation: pulse-c 1.8s infinite; display: inline-block;
+}
+@keyframes pulse-c {
+  0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.5); }
+  70% { box-shadow: 0 0 0 6px rgba(6, 182, 212, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; border: 2px solid #fff; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+/* ───── App body ───── */
+.app-body {
+  flex: 1; display: grid;
+  grid-template-columns: 380px minmax(0, 1fr);
+  min-height: calc(100vh - 60px);
+}
+@media (max-width: 1180px) { .app-body { grid-template-columns: 320px minmax(0, 1fr); } }
+@media (max-width: 960px)  { .app-body { grid-template-columns: 280px minmax(0, 1fr); } }
+@media (max-width: 720px)  { .app-body { grid-template-columns: minmax(0, 1fr); } .chat-rail { display: none !important; } }
+
+/* ───── Chat rail ───── */
+.chat-rail {
+  border-right: 1px solid var(--border); display: flex; flex-direction: column;
+  background: #fff; min-width: 0;
+  height: calc(100vh - 60px); position: sticky; top: 60px;
+}
+.cr-head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
+.cr-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cr-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.cr-members { display: flex; align-items: center; gap: 10px; }
+
+.cr-body { flex: 1; padding: 18px 20px 12px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; scroll-behavior: smooth; }
+
+.cr-msg { display: flex; gap: 10px; animation: crMsgIn 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.cr-msg-body { flex: 1; min-width: 0; }
+.cr-msg-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+.cr-msg-name { font-size: 13px; font-weight: 600; }
+.cr-role, .cr-role-ai {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 1px 6px; border-radius: 4px; font-weight: 600;
+}
+.cr-role { color: var(--ink-faint); background: var(--surface); border: 1px solid var(--border); }
+.cr-role-ai { color: var(--purple); background: var(--purple-tint); border: 1px solid var(--purple-bd); }
+.cr-msg-time { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-faint); }
+.cr-msg-text { font-size: 13.5px; color: var(--ink-2); line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+
+.cr-mention { padding: 1px 5px; border-radius: 4px; font-weight: 600; font-size: 13px; }
+.cr-mention.cyan   { color: var(--cyan);   background: var(--cyan-tint); }
+.cr-mention.blue   { color: var(--blue);   background: var(--blue-tint); }
+.cr-mention.purple { color: var(--purple); background: var(--purple-tint); }
+
+.cr-ai-bubble {
+  margin-top: 6px; padding: 10px 14px;
+  background: linear-gradient(180deg, #F5F3FF, #FAF9FF);
+  border: 1px solid var(--purple-bd); border-radius: 10px;
+  font-size: 13px; color: var(--purple); font-weight: 500; line-height: 1.55;
+  white-space: pre-wrap; word-break: break-word;
+}
+.cr-ai-bubble.latest {
+  background: linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%);
+  border-color: #C4B5FD;
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.10), 0 6px 16px -4px rgba(124, 58, 237, 0.35);
+  animation: crAiPulse 2.4s ease-in-out infinite;
+}
+
+.cr-typing { animation: crMsgIn 240ms ease both; }
+.cr-typing-bubble {
+  display: inline-flex; gap: 5px; align-items: center; margin-top: 4px;
+  padding: 10px 14px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 999px;
+}
+.cr-tdot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--ink-faint); animation: crDot 1.3s infinite ease-in-out;
+}
+
+.cr-composer {
+  border-top: 1px solid var(--border); padding: 12px 16px;
+  display: flex; align-items: center; gap: 10px; background: var(--surface);
+}
+.cr-role-pick {
+  display: flex; gap: 2px; background: #fff;
+  border: 1px solid var(--border); padding: 2px; border-radius: 6px;
+}
+.cr-role-pick button {
+  border: 0; background: transparent; padding: 4px 8px; font-family: inherit;
+  font-size: 11px; font-weight: 600; color: var(--ink-dim);
+  border-radius: 4px; cursor: pointer; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.cr-role-pick button.active.pm { background: var(--cyan-tint); color: var(--cyan); }
+.cr-role-pick button.active.eng { background: var(--blue-tint); color: var(--blue); }
+
+.cr-input {
+  flex: 1; border: 1px solid var(--border); background: #fff;
+  border-radius: 8px; padding: 10px 12px;
+  font-family: inherit; font-size: 13px; color: var(--ink); outline: none;
+  min-width: 0; resize: none; line-height: 1.4; max-height: 100px;
+}
+.cr-input:focus { border-color: var(--cyan); }
+
+@keyframes crMsgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes crAiPulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.10), 0 6px 16px -4px rgba(124, 58, 237, 0.35); }
+  50%      { box-shadow: 0 0 0 8px rgba(124, 58, 237, 0.04), 0 6px 20px -4px rgba(124, 58, 237, 0.55); }
+}
+@keyframes crDot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30%           { transform: translateY(-4px); opacity: 1; }
+}
+
+/* ───── Mission Control: plan pane ───── */
+.mc-plan-col {
+  background: var(--surface); min-height: calc(100vh - 60px);
+  padding: 56px 40px 80px; position: relative;
+}
+.mc-empty {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px; padding: 40px; text-align: center;
+  transition: opacity 600ms ease, transform 600ms ease;
+}
+.mc-empty.hide { opacity: 0; transform: translateY(-12px) scale(0.96); pointer-events: none; }
+.mc-orb {
+  width: 110px; height: 110px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(124,58,237,0.22), rgba(124,58,237,0) 70%);
+  display: flex; align-items: center; justify-content: center;
+  animation: mcOrb 3s ease-in-out infinite;
+}
+.mc-orb.sm { width: 56px; height: 56px; }
+.mc-orb-inner {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 16px;
+  box-shadow: 0 12px 32px -6px rgba(124, 58, 237, 0.55);
+}
+.mc-orb.sm .mc-orb-inner { width: 32px; height: 32px; font-size: 11px; }
+.mc-empty-label { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-faint); font-weight: 600; }
+.mc-empty-title { font-size: 20px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; max-width: 420px; }
+.mc-empty-sub { font-size: 14px; color: var(--ink-dim); max-width: 460px; line-height: 1.55; }
+
+.mc-drafting {
+  max-width: 880px; margin: 0 auto;
+  background: #fff; border: 1px solid var(--border); border-radius: 16px;
+  padding: 28px 32px; box-shadow: 0 8px 32px -16px rgba(15, 23, 42, 0.18);
+  animation: mcPlanIn 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.mc-drafting-head { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
+.mc-drafting-label { font-size: 16px; font-weight: 600; color: var(--purple); display: flex; align-items: center; gap: 8px; }
+.mc-drafting-label::after { content: ''; display: inline-block; width: 6px; height: 16px; background: var(--purple); animation: blink 1s steps(2) infinite; }
+.mc-drafting-sub { font-size: 12px; color: var(--ink-dim); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+.mc-drafting-rows { display: flex; flex-direction: column; gap: 10px; }
+.mc-skel-row { display: flex; gap: 14px; align-items: center; padding: 14px 0; border-top: 1px solid var(--border); animation: crMsgIn 400ms ease both; }
+.mc-skel-row:first-child { border-top: 0; padding-top: 0; }
+.mc-skel-circle, .mc-skel-bar {
   border-radius: 6px;
-  color: var(--text);
-  font-size: 13px;
-  outline: none;
+  background: linear-gradient(90deg, #EEF2F7 0%, #F8FAFC 50%, #EEF2F7 100%);
+  background-size: 200% 100%; animation: mcShimmer 1.4s infinite;
 }
-input:focus, textarea:focus, select:focus { border-color: var(--accent); }
-textarea { resize: vertical; font-family: 'SF Mono', 'Fira Code', monospace; min-height: 60px; }
+.mc-skel-circle { width: 22px; height: 22px; }
+@keyframes mcShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+@keyframes blink { 50% { opacity: 0; } }
 
-/* ── Project Selector ───────────────────────────────── */
-.project-select {
-  padding: 6px 12px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
-  font-size: 13px;
-  cursor: pointer;
-  min-width: 200px;
-}
-
-/* ── Project Modal ──────────────────────────────────── */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-.modal {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 24px;
-  width: 500px;
-  max-width: 90vw;
-}
-.modal h3 { margin-bottom: 16px; }
-.modal .field { margin-bottom: 12px; }
-.modal label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
-.modal .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
-
-/* ── Kanban ─────────────────────────────────────────── */
-.project-bg {
-  padding: 12px;
-  margin-bottom: 8px;
-  background: var(--surface2);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  color: var(--text-dim);
-  line-height: 1.6;
-  border-left: 3px solid var(--accent);
+.mc-plan-wrap { animation: mcPlanIn 700ms cubic-bezier(0.16, 1, 0.3, 1) both; max-width: 880px; margin: 0 auto; }
+.mc-plan-lead { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.mc-plan-card { background: #fff; border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 8px 32px -16px rgba(15, 23, 42, 0.18); overflow: hidden; }
+.mc-plan-header { padding: 24px 28px; border-bottom: 1px solid var(--border); }
+.mc-plan-id-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.mc-req-id { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--cyan); background: var(--cyan-tint); padding: 4px 10px; border-radius: 6px; font-weight: 700; }
+.mc-version-tag { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--green); background: var(--green-tint); border: 1px solid var(--green-bd); padding: 3px 8px; border-radius: 5px; font-weight: 700; letter-spacing: 0.04em; }
+.mc-plan-title { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin: 6px 0 0; }
+.mc-plan-sub { font-size: 13px; color: var(--ink-dim); margin-top: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mc-plan-summary { font-size: 14px; color: var(--ink-2); margin-top: 12px; line-height: 1.55; }
+.mc-promo-note {
+  margin-top: 14px; padding: 10px 14px;
+  background: var(--green-tint); border: 1px solid var(--green-bd); border-radius: 8px;
+  font-size: 12.5px; color: var(--green); font-weight: 500;
+  display: flex; align-items: center; gap: 10px;
+  animation: crMsgIn 500ms ease both;
 }
 
-.kanban-columns {
-  display: flex;
-  gap: 8px;
-  flex: 1;
-  min-height: 0;
+.mc-section-head { padding: 16px 28px 8px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; }
+.mc-subtask-list { padding: 0 14px 10px; }
+.mc-subtask-row {
+  display: grid; grid-template-columns: 24px 1fr auto auto auto;
+  gap: 16px; align-items: center;
+  padding: 12px 14px; border-radius: 8px;
+  animation: mcRowIn 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
+.mc-subtask-row.flash {
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.18), rgba(245, 158, 11, 0.06));
+  box-shadow: inset 3px 0 0 var(--amber-soft), 0 0 0 1px var(--amber-bd);
+  animation: mcFlash 1800ms ease-out both;
+}
+.mc-checkbox { width: 20px; height: 20px; border-radius: 5px; border: 1.5px solid var(--border-strong); background: #fff; }
+.mc-subtask-title { font-size: 14px; color: var(--ink); font-weight: 500; }
+.mc-owner { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-dim); }
+.mc-time-cell { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink-dim); min-width: 60px; text-align: right; }
+.mc-action-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 24px; border-top: 1px solid var(--border); background: var(--surface);
+}
+.mc-caption { margin-top: 18px; font-size: 13px; color: var(--ink-dim); font-style: italic; text-align: center; }
 
-.kanban-col {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
+@keyframes mcOrb { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.08); opacity: 1; } }
+@keyframes mcPlanIn { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes mcRowIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes mcFlash { 0% { background: rgba(245, 158, 11, 0.32); } 100% { background: rgba(245, 158, 11, 0.06); } }
 
-.kanban-col-header {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 6px 8px;
-  margin-bottom: 6px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+/* ───── Toast ───── */
+.jump-toast {
+  position: fixed; top: 76px; left: 50%; transform: translateX(-50%);
+  z-index: 200; display: flex; align-items: center; gap: 10px;
+  padding: 10px 18px;
+  background: rgba(15, 23, 42, 0.96); color: #fff;
+  border-radius: 999px; font-size: 13px; font-weight: 500;
+  box-shadow: 0 16px 40px -10px rgba(15, 23, 42, 0.5);
+  animation: jumpToastIn 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
-.kanban-col-header .count {
-  background: var(--surface2);
-  padding: 1px 6px;
-  border-radius: 10px;
-  font-size: 11px;
-}
-.col-todo .kanban-col-header { color: var(--text-dim); background: rgba(148,163,184,0.1); }
-.col-in_progress .kanban-col-header { color: var(--yellow); background: rgba(234,179,8,0.1); }
-.col-done .kanban-col-header { color: var(--green); background: rgba(34,197,94,0.1); }
+.jump-toast strong { color: var(--cyan-soft); font-weight: 600; }
+.jump-toast.amber strong { color: var(--amber); }
+.jump-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cyan-soft); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.6); animation: pulse-c 1.4s infinite; }
+.jump-dot.amber { background: var(--amber-soft); }
+@keyframes jumpToastIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
-.kanban-cards {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+/* ───── Live Execution ───── */
+.le-wrap { background: var(--surface); min-height: calc(100vh - 60px); padding: 0 0 60px; }
+.le-header { padding: 32px 40px 16px; }
+.le-header-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.le-titleblock { flex: 1; min-width: 0; }
+.le-id-row { display: flex; align-items: center; gap: 10px; margin: 8px 0 4px; flex-wrap: wrap; }
+.le-req-id { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--cyan); background: var(--cyan-tint); padding: 4px 10px; border-radius: 6px; font-weight: 700; }
+.le-working-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--cyan-tint); border: 1px solid var(--cyan-bd); border-radius: 999px; font-size: 11px; color: var(--cyan); font-weight: 600; }
+.le-phase-counter { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-faint); }
+.le-title { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin: 6px 0 0; }
+.le-actions { display: flex; gap: 8px; }
 
-.req-card {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 10px;
-  cursor: default;
-  transition: border-color 0.15s;
+.le-bigstatus {
+  margin: 18px 40px 24px; padding: 20px 24px;
+  background: linear-gradient(135deg, #ECFEFF 0%, #F5F3FF 100%);
+  border: 1px solid var(--cyan-bd); border-radius: 14px;
+  display: flex; justify-content: space-between; align-items: center; gap: 24px;
+  box-shadow: 0 4px 20px -8px rgba(8, 145, 178, 0.2);
+  transition: all 400ms ease;
 }
-.req-card:hover { border-color: var(--accent); }
-
-.req-card .req-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4px;
+.le-bigstatus.done {
+  background: linear-gradient(135deg, #ECFDF5 0%, #F0FDF4 100%);
+  border-color: var(--green-bd);
+  box-shadow: 0 4px 20px -8px rgba(16, 185, 129, 0.25);
 }
-.req-card .req-id {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--accent-light);
-}
-.priority-badge {
-  font-size: 10px;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-.priority-high { background: rgba(239,68,68,0.15); color: var(--red); }
-.priority-medium { background: rgba(234,179,8,0.15); color: var(--yellow); }
-.priority-low { background: rgba(34,197,94,0.15); color: var(--green); }
-
-.req-card .req-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
-.req-card .req-desc { font-size: 11px; color: var(--text-dim); line-height: 1.4; }
-
-/* Add req form */
-.add-req-form {
-  background: var(--surface2);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius-sm);
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 6px;
-}
-.add-req-form .row { display: flex; gap: 6px; }
-.add-req-form .row > * { flex: 1; }
-
-/* ── Chat ───────────────────────────────────────────── */
-.chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.chat-msg {
-  display: flex;
-  gap: 10px;
-  max-width: 85%;
-}
-.chat-msg.pm { align-self: flex-start; }
-.chat-msg.engineer { align-self: flex-start; }
-.chat-msg.ai { align-self: flex-start; }
-
-.chat-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
+.le-bigstatus-left { display: flex; align-items: center; gap: 16px; flex: 1; min-width: 0; }
+.le-bigstatus-pulse {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--cyan-soft);
+  box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.55);
+  animation: pulse-big 1.6s infinite;
   flex-shrink: 0;
 }
-.chat-msg.pm .chat-avatar { background: rgba(59,130,246,0.2); color: var(--blue); }
-.chat-msg.engineer .chat-avatar { background: rgba(34,197,94,0.2); color: var(--green); }
-.chat-msg.ai .chat-avatar { background: rgba(168,85,247,0.2); color: var(--purple); }
-
-.chat-bubble {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 10px 14px;
-  min-width: 0;
+.le-bigstatus.done .le-bigstatus-pulse {
+  background: var(--green-soft);
+  animation: none;
+  box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.15);
 }
-.chat-msg.ai .chat-bubble { border-color: rgba(168,85,247,0.3); }
-
-.chat-bubble .role-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  margin-bottom: 4px;
+@keyframes pulse-big {
+  0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.55); }
+  70% { box-shadow: 0 0 0 14px rgba(6, 182, 212, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
 }
-.chat-msg.pm .role-label { color: var(--blue); }
-.chat-msg.engineer .role-label { color: var(--green); }
-.chat-msg.ai .role-label { color: var(--purple); }
-
-.chat-bubble .msg-content {
-  font-size: 13px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-break: break-word;
+.le-bigstatus-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); font-weight: 600; }
+.le-bigstatus-verb {
+  font-size: 28px; font-weight: 700; color: var(--cyan);
+  letter-spacing: -0.02em; display: inline-flex; align-items: center; gap: 6px;
 }
-.chat-bubble .msg-content strong { font-weight: 600; }
+.le-bigstatus.done .le-bigstatus-verb { color: var(--green); }
+.le-bigstatus-cursor {
+  display: inline-block; width: 3px; height: 24px;
+  background: var(--cyan); animation: blink 1s steps(2) infinite;
+}
+.le-bigstatus.done .le-bigstatus-cursor { display: none; }
+.le-bigstatus-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; padding-left: 24px; border-left: 1px solid rgba(8,145,178,0.18); flex-shrink: 0; }
+.le-bigstatus-filelabel { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-faint); letter-spacing: 0.14em; text-transform: uppercase; }
+.le-bigstatus-file { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--ink); font-weight: 600; }
 
-.chat-bubble .msg-time {
-  font-size: 10px;
-  color: var(--text-dim);
-  margin-top: 6px;
+.le-body {
+  display: grid; grid-template-columns: 280px minmax(0, 1fr);
+  gap: 24px; padding: 0 40px;
+}
+@media (max-width: 1080px) {
+  .le-body { grid-template-columns: 220px minmax(0, 1fr); gap: 16px; padding: 0 20px; }
+}
+.le-tasks { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 18px 16px; align-self: start; position: sticky; top: 76px; }
+.le-tasks-head { display: flex; justify-content: space-between; align-items: center; padding: 0 6px 12px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+.le-phase-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 14px; }
+.le-phase { padding: 12px; border-radius: 10px; transition: all 240ms ease; }
+.le-phase-active { background: var(--cyan-tint); box-shadow: inset 3px 0 0 var(--cyan); }
+.le-phase-done .le-phase-num { background: var(--green); color: #fff; border-color: var(--green); }
+.le-phase-pending .le-phase-num { background: #fff; color: var(--ink-faint); }
+.le-phase-row { display: flex; align-items: center; gap: 10px; }
+.le-phase-num {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--cyan); color: #fff;
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;
+  border: 1.5px solid transparent; flex-shrink: 0;
+}
+.le-phase-active .le-phase-num { background: var(--cyan); color: #fff; }
+.le-phase-text { flex: 1; min-width: 0; }
+.le-phase-title { font-size: 13px; font-weight: 600; color: var(--ink); }
+.le-phase-sub { font-size: 11px; color: var(--ink-dim); margin-top: 2px; }
+.le-spin {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid var(--cyan-tint); border-top-color: var(--cyan);
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+}
+.le-spin.sm { width: 10px; height: 10px; border-width: 1.5px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.le-substep-list { list-style: none; padding: 6px 0 0 36px; margin: 6px 0 0; border-left: 1px dashed var(--border); margin-left: 12px; display: flex; flex-direction: column; gap: 4px; }
+.le-substep { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-dim); padding: 2px 0; }
+.le-substep-done { color: var(--green); }
+.le-substep-active { color: var(--cyan); font-weight: 500; }
+.le-substep-icon { display: inline-flex; align-items: center; justify-content: center; width: 14px; }
+
+.le-handoff {
+  margin-top: 18px; padding: 14px;
+  background: var(--green-tint); border: 1px solid var(--green-bd); border-radius: 10px;
+  display: flex; gap: 10px; align-items: center;
+}
+.le-handoff-icon { width: 28px; height: 28px; border-radius: 50%; background: var(--green); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.le-handoff-title { font-size: 13px; font-weight: 600; color: var(--green); }
+.le-handoff-sub { font-size: 11px; color: var(--ink-2); margin-top: 2px; }
+
+.le-canvas { min-height: 480px; }
+.le-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); animation: leCardIn 400ms ease both; }
+@keyframes leCardIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.le-card-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #fff, var(--surface));
+}
+.le-card-tag {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; font-weight: 700;
+  color: var(--cyan); background: var(--cyan-tint); border: 1px solid var(--cyan-bd);
+  padding: 3px 8px; border-radius: 5px;
+}
+.le-card-file { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--ink); font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.le-card-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-dim); }
+
+.le-code-block {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px; line-height: 1.65;
+  background: #0F172A; color: #E2E8F0;
+  margin: 0; padding: 20px 22px;
+  white-space: pre-wrap; word-break: break-word;
+  min-height: 220px; max-height: 480px; overflow: auto;
+}
+.le-code-block .add { color: #4ADE80; }
+.le-code-block .del { color: #F87171; }
+.le-cursor {
+  display: inline-block; width: 8px; height: 16px;
+  background: var(--cyan-soft);
+  animation: blink 1s steps(2) infinite;
+  vertical-align: text-bottom; margin-left: 2px;
 }
 
-/* Analysis detail toggle */
-.analysis-toggle {
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--accent-light);
+.le-doc-block { padding: 20px 22px; min-height: 220px; max-height: 480px; overflow: auto; }
+.le-doc-block pre {
+  font-family: 'Inter', sans-serif; font-size: 13.5px; line-height: 1.65;
+  color: var(--ink); white-space: pre-wrap; word-break: break-word; margin: 0;
+}
+.le-doc-foot { padding: 10px 18px; border-top: 1px solid var(--border); background: var(--surface); display: flex; justify-content: space-between; font-size: 11px; }
+
+.le-test-list { padding: 8px 0; }
+.le-test-row {
+  display: grid; grid-template-columns: 28px 1fr auto;
+  gap: 14px; align-items: center;
+  padding: 10px 18px; font-size: 13px;
+  animation: leRowIn 360ms ease both;
+}
+@keyframes leRowIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: translateX(0); } }
+.le-test-icon { font-size: 14px; }
+.le-test-pass .le-test-icon { color: var(--green); }
+.le-test-running .le-test-icon { color: var(--cyan); }
+.le-test-pending { color: var(--ink-faint); }
+.le-test-pending .le-test-icon { color: var(--border-strong); }
+.le-test-name { color: var(--ink-2); }
+.le-test-time { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-faint); }
+
+.le-coverage { padding: 14px 18px; border-top: 1px solid var(--border); background: var(--surface); }
+.le-coverage-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.progress { height: 6px; background: var(--surface-2); border-radius: 999px; overflow: hidden; width: 100%; }
+.progress > span { display: block; height: 100%; background: linear-gradient(90deg, var(--green-soft), var(--green)); border-radius: 999px; }
+
+.le-summary {
+  background: linear-gradient(180deg, #fff, #F0FDF4);
+  border-color: var(--green-bd);
+}
+.le-summary-head { display: flex; align-items: center; gap: 14px; padding: 22px 24px; border-bottom: 1px solid var(--green-bd); }
+.le-summary-icon {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--green); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700;
+  box-shadow: 0 4px 16px -4px rgba(16,185,129,0.5);
+}
+.le-summary-title { font-size: 18px; font-weight: 600; }
+.le-summary-sub { font-size: 12px; color: var(--ink-dim); margin-top: 2px; }
+.le-summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 22px 24px; }
+.le-summary-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; }
+.le-summary-metric { font-size: 22px; font-weight: 700; color: var(--green); letter-spacing: -0.02em; }
+.le-summary-metric-label { font-size: 11px; color: var(--ink-dim); margin-top: 4px; letter-spacing: 0.06em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; }
+.le-summary-cta { padding: 16px 24px; border-top: 1px solid var(--green-bd); background: rgba(16,185,129,0.04); display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 500; }
+.le-summary-cta-btn { margin-left: auto; }
+
+/* Executing-loading overlay (between approve and artifacts arrival) */
+.le-loading {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px; padding: 80px 32px; min-height: 480px;
+  background: #fff; border: 1px dashed var(--border-strong); border-radius: 14px;
+}
+.le-loading-orb {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(6,182,212,0.25), rgba(6,182,212,0) 70%);
+  display: flex; align-items: center; justify-content: center;
+  animation: mcOrb 2.4s ease-in-out infinite;
+}
+.le-loading-orb-inner {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--cyan-soft), var(--cyan));
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 12px;
+  box-shadow: 0 8px 24px -4px rgba(8,145,178,0.5);
+}
+.le-loading-label { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cyan); font-weight: 700; }
+.le-loading-title { font-size: 18px; font-weight: 600; color: var(--ink); text-align: center; }
+.le-loading-sub { font-size: 13px; color: var(--ink-dim); text-align: center; max-width: 360px; }
+
+/* ───── Approval Gate ───── */
+.ag-wrap {
+  min-height: calc(100vh - 60px); background: var(--surface);
+  padding: 48px 24px 80px; display: flex; justify-content: center;
+}
+.ag-inner { width: 100%; max-width: 820px; }
+.ag-intro { text-align: center; margin-bottom: 24px; }
+.ag-card {
+  background: #fff; border: 1px solid var(--border);
+  border-radius: 18px; box-shadow: var(--shadow-lg); overflow: hidden;
+}
+.ag-header { padding: 28px 32px 24px; border-bottom: 1px solid var(--border); }
+.ag-header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.ag-id-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.ag-req-id {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--cyan);
+  background: var(--cyan-tint); padding: 3px 8px; border-radius: 6px; font-weight: 600;
+}
+.ag-title { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 6px 0 0; }
+.ag-sub { font-size: 13px; color: var(--ink-dim); margin-top: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ag-badge {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 8px 12px; background: var(--purple-tint); border: 1px solid var(--purple-bd);
+  border-radius: 12px; min-width: 80px;
+}
+.ag-badge-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--purple); font-weight: 600; }
+
+.ag-section { padding: 20px 32px; border-bottom: 1px solid var(--border); }
+.ag-section-title { font-size: 13px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+
+.ag-did-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 18px; }
+.ag-did-item { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-2); }
+.ag-check {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--green-tint); border: 1px solid var(--green-bd);
+  color: var(--green); display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+
+.ag-impact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.ag-impact-card {
+  padding: 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+}
+.ag-impact-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 10px; }
+.ag-impact-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
+.ag-impact-before { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--ink-dim); text-decoration: line-through; }
+.ag-impact-arrow { color: var(--ink-faint); }
+.ag-impact-after { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; color: var(--ink); }
+.ag-impact-delta {
+  margin-left: auto; font-size: 12px; font-weight: 600;
+  color: var(--green); background: var(--green-tint);
+  padding: 3px 8px; border-radius: 6px; font-family: 'JetBrains Mono', monospace;
+}
+.ag-impact-delta.bad { color: var(--red); background: var(--red-tint); }
+
+.ag-artifacts { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.ag-decision { padding: 24px 32px 28px; background: linear-gradient(180deg, #fff, var(--surface)); }
+.ag-decision-row { display: flex; gap: 12px; align-items: stretch; }
+.ag-approve-btn {
+  flex: 1 1 auto; padding: 16px 24px;
+  background: var(--cyan); color: #fff; border: none; border-radius: 12px;
+  font-family: inherit; font-size: 16px; font-weight: 600; letter-spacing: -0.01em;
   cursor: pointer;
-  user-select: none;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.18) inset, 0 8px 24px -8px rgba(8,145,178,0.55);
+  transition: transform 120ms ease;
 }
-.analysis-toggle:hover { text-decoration: underline; }
+.ag-approve-btn:hover { transform: translateY(-1px); }
+.ag-approve-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.ag-reject-btn {
+  flex: 0 0 auto; padding: 14px 22px; background: #fff;
+  border: 1px solid var(--border-strong); border-radius: 12px; cursor: pointer;
+  text-align: left; display: flex; flex-direction: column; gap: 4px;
+  font-family: inherit;
+}
+.ag-reject-btn:hover { background: var(--surface); }
+.ag-reject-title { font-size: 14px; font-weight: 600; color: var(--ink); }
+.ag-reject-sub { font-size: 11.5px; color: var(--ink-dim); }
 
-.analysis-detail {
-  margin-top: 8px;
-  padding: 10px;
-  background: var(--bg);
-  border-radius: 6px;
-  font-size: 12px;
-}
+.ag-footer { padding: 18px 32px; border-top: 1px solid var(--border); background: var(--surface); display: flex; justify-content: space-between; align-items: center; }
+.ag-footer-line { font-size: 13px; color: var(--ink-2); font-style: italic; }
+.ag-footer-trace { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--ink-faint); }
 
-.analysis-detail .score-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
+/* Artifact preview drawer */
+.ag-preview {
+  margin-top: 24px; background: #fff; border: 1px solid var(--border); border-radius: 14px;
+  overflow: hidden; animation: leCardIn 320ms ease both;
 }
-.score-ring {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  font-weight: 700;
-  border: 3px solid;
+.ag-preview-head { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--surface); }
+.ag-preview-tabs { display: flex; gap: 4px; }
+.ag-preview-tabs button {
+  border: 0; background: transparent; padding: 6px 12px;
+  font-family: inherit; font-size: 12px; font-weight: 500;
+  color: var(--ink-dim); border-radius: 6px; cursor: pointer;
 }
-.score-ring.high { border-color: var(--green); color: var(--green); }
-.score-ring.medium { border-color: var(--yellow); color: var(--yellow); }
-.score-ring.low { border-color: var(--red); color: var(--red); }
+.ag-preview-tabs button.active { background: var(--cyan-tint); color: var(--cyan); font-weight: 600; }
+.ag-preview-body { max-height: 420px; overflow: auto; }
+.ag-preview-body pre {
+  margin: 0; padding: 16px 20px;
+  font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6;
+  white-space: pre-wrap; word-break: break-word;
+}
+.ag-preview-body.code-mode { background: #0F172A; }
+.ag-preview-body.code-mode pre { color: #E2E8F0; }
+.ag-preview-body.code-mode .add { color: #4ADE80; }
+.ag-preview-body.code-mode .del { color: #F87171; }
+.ag-preview-body.docs-mode pre { font-family: 'Inter', sans-serif; color: var(--ink); }
 
-.detail-req {
-  padding: 8px;
-  margin-bottom: 6px;
-  background: var(--surface2);
-  border-radius: 6px;
-  border-left: 3px solid var(--border);
+.ag-shipped {
+  margin: 24px 0 0; padding: 18px 22px;
+  background: linear-gradient(135deg, var(--green-tint), #F0FDF4);
+  border: 1px solid var(--green-bd); border-radius: 12px;
+  display: flex; align-items: center; gap: 14px;
 }
-.detail-req.status-match { border-left-color: var(--green); }
-.detail-req.status-partial { border-left-color: var(--yellow); }
-.detail-req.status-gap { border-left-color: var(--red); }
-.detail-req.status-clarification_needed { border-left-color: var(--orange); }
+.ag-shipped-icon { width: 36px; height: 36px; border-radius: 50%; background: var(--green); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.ag-shipped-title { font-size: 14px; font-weight: 600; color: var(--green); }
+.ag-shipped-sub { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
 
-.detail-req .dr-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-.detail-req .dr-head .status-tag {
-  font-size: 10px;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-.status-tag.match { background: rgba(34,197,94,0.15); color: var(--green); }
-.status-tag.partial { background: rgba(234,179,8,0.15); color: var(--yellow); }
-.status-tag.gap { background: rgba(239,68,68,0.15); color: var(--red); }
-.status-tag.clarification_needed { background: rgba(249,115,22,0.15); color: var(--orange); }
+/* ───── Decision Ledger ───── */
+.dl-wrap { min-height: calc(100vh - 60px); background: var(--surface); padding: 40px 32px 64px; }
+.dl-inner { max-width: 960px; margin: 0 auto; }
+.dl-head { margin-bottom: 24px; }
+.dl-title { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+.dl-sub { font-size: 13px; color: var(--ink-dim); margin-top: 6px; }
 
-.detail-req ul { padding-left: 16px; margin: 2px 0; }
-.detail-req li { font-size: 11px; color: var(--text-dim); }
-.detail-req .gap-text { color: var(--red); }
-
-/* Chat input area */
-.chat-input-area {
-  padding: 12px 16px;
-  border-top: 1px solid var(--border);
-  background: var(--surface);
-  flex-shrink: 0;
-}
-
-.role-toggle {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 8px;
-  background: var(--bg);
-  border-radius: 6px;
-  padding: 3px;
-  width: fit-content;
-}
-.role-toggle button {
-  padding: 4px 14px;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--text-dim);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.role-toggle button.active-pm { background: var(--blue); color: #fff; }
-.role-toggle button.active-engineer { background: var(--green); color: #fff; }
-
-.chat-input-row {
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-}
-.chat-input-row textarea {
-  flex: 1;
-  min-height: 40px;
-  max-height: 150px;
-}
-.chat-input-row .send-btn {
-  padding: 8px 16px;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
+.dl-filters { display: flex; gap: 16px; margin: 18px 0 24px; align-items: center; flex-wrap: wrap; }
+.dl-filter-group { display: flex; gap: 4px; background: #fff; border: 1px solid var(--border); padding: 3px; border-radius: 10px; }
+.dl-filter-group button {
+  border: 0; background: transparent; padding: 6px 12px;
+  font-family: inherit; font-size: 12.5px; font-weight: 500;
+  color: var(--ink-dim); border-radius: 7px; cursor: pointer;
   white-space: nowrap;
 }
-.chat-input-row .send-btn:hover { background: var(--accent-light); }
-.chat-input-row .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.dl-filter-group button.active { background: var(--cyan-tint); color: var(--cyan); font-weight: 600; }
+.dl-filter-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); }
 
-/* Git mini form */
-.git-form {
-  margin-top: 8px;
-  padding: 8px;
-  background: var(--bg);
-  border-radius: 6px;
-  display: flex;
-  gap: 6px;
-  align-items: flex-end;
+.dl-day-group { margin-bottom: 28px; }
+.dl-day-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 0 12px; margin-bottom: 12px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink-dim);
 }
-.git-form .field { flex: 1; }
-.git-form label { font-size: 11px; color: var(--text-dim); display: block; margin-bottom: 2px; }
-.git-form input { font-size: 12px; padding: 6px 8px; }
+.dl-day-header::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-/* Typing indicator */
-.typing-indicator {
-  display: flex;
-  gap: 10px;
-  align-self: flex-start;
-  max-width: 85%;
-}
-.typing-dots {
-  display: flex;
-  gap: 4px;
-  padding: 14px;
-  background: var(--surface2);
-  border: 1px solid rgba(168,85,247,0.3);
-  border-radius: var(--radius-sm);
-}
-.typing-dots span {
-  width: 6px;
-  height: 6px;
-  background: var(--purple);
-  border-radius: 50%;
-  animation: bounce 1.2s infinite;
-}
-.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
-.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes bounce {
-  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
-  40% { transform: translateY(-6px); opacity: 1; }
+.dl-timeline { position: relative; padding-left: 24px; }
+.dl-timeline::before {
+  content: ''; position: absolute; left: 11px; top: 0; bottom: 0;
+  width: 2px; background: var(--border);
 }
 
-/* Empty state */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  color: var(--text-dim);
-  font-size: 13px;
-  text-align: center;
-  gap: 8px;
+.dl-entry {
+  position: relative; margin-bottom: 14px;
+  background: #fff; border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 18px;
+  animation: dlIn 320ms ease both;
 }
-.empty-state .icon { font-size: 32px; opacity: 0.5; }
+.dl-entry::before {
+  content: ''; position: absolute; left: -19px; top: 18px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--surface); border: 2px solid var(--border-strong);
+}
+.dl-entry.ai::before    { background: var(--purple); border-color: var(--purple-bd); }
+.dl-entry.pm::before    { background: var(--cyan); border-color: var(--cyan-bd); }
+.dl-entry.eng::before   { background: var(--blue); border-color: #BFDBFE; }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+.dl-entry-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+.dl-time { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-faint); }
+.dl-actor { font-size: 12.5px; font-weight: 600; }
+.dl-actor.ai  { color: var(--purple); }
+.dl-actor.pm  { color: var(--cyan); }
+.dl-actor.eng { color: var(--blue); }
+.dl-action-pill {
+  font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+  letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700;
+  padding: 2px 7px; border-radius: 5px;
+}
+.dl-action-pill.plan_drafted    { color: var(--purple); background: var(--purple-tint); border: 1px solid var(--purple-bd); }
+.dl-action-pill.plan_iterated   { color: var(--amber); background: var(--amber-tint); border: 1px solid var(--amber-bd); }
+.dl-action-pill.plan_approved   { color: var(--cyan); background: var(--cyan-tint); border: 1px solid var(--cyan-bd); }
+.dl-action-pill.execution_started { color: var(--cyan); background: var(--cyan-tint); border: 1px solid var(--cyan-bd); }
+.dl-action-pill.execution_completed { color: var(--green); background: var(--green-tint); border: 1px solid var(--green-bd); }
+.dl-action-pill.review_approved { color: var(--green); background: var(--green-tint); border: 1px solid var(--green-bd); }
+.dl-action-pill.review_rejected { color: var(--red); background: var(--red-tint); border: 1px solid var(--red-bd); }
+
+.dl-summary { font-size: 13.5px; color: var(--ink-2); line-height: 1.55; }
+.dl-meta { font-size: 11px; color: var(--ink-faint); margin-top: 6px; font-family: 'JetBrains Mono', monospace; }
+
+.dl-empty {
+  text-align: center; padding: 60px 32px;
+  background: #fff; border: 1px dashed var(--border-strong); border-radius: 14px;
+  color: var(--ink-dim);
+}
+
+@keyframes dlIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+
+/* ───── Command Seat ───── */
+.cs-wrap { min-height: calc(100vh - 60px); background: var(--surface); padding: 32px 36px 56px; }
+.cs-grid { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 980px) { .cs-grid { grid-template-columns: minmax(0, 1fr); } }
+
+.cs-side { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 80px; }
+.cs-side-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 18px; box-shadow: var(--shadow-sm); }
+.cs-side-title { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 14px; }
+.cs-stat-row { display: flex; flex-direction: column; gap: 12px; }
+.cs-stat { display: flex; justify-content: space-between; align-items: baseline; }
+.cs-stat-label { font-size: 12.5px; color: var(--ink-dim); }
+.cs-stat-val { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+.cs-stat-val.green  { color: var(--green); }
+.cs-stat-val.cyan   { color: var(--cyan); }
+.cs-stat-val.amber  { color: var(--amber); }
+
+.cs-quote-card {
+  padding: 16px;
+  background: linear-gradient(180deg, var(--amber-tint), #fff);
+  border: 1px solid var(--amber-bd); border-radius: 14px;
+  font-family: 'Instrument Serif', serif; font-style: italic;
+  font-size: 16px; line-height: 1.4; color: var(--amber);
+}
+
+.cs-main { display: flex; flex-direction: column; gap: 22px; }
+.cs-header { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 22px 26px; box-shadow: var(--shadow-sm); }
+.cs-header-top { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+.cs-header-title { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+.cs-header-sub {
+  font-family: 'Instrument Serif', serif; font-style: italic;
+  font-size: 20px; color: var(--amber); letter-spacing: -0.01em; margin-top: 8px;
+}
+.cs-stat-badges { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.cs-stat-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 600;
+}
+.cs-stat-badge.cyan  { background: var(--cyan-tint); border: 1px solid var(--cyan-bd); color: var(--cyan); }
+.cs-stat-badge.amber { background: var(--amber-tint); border: 1px solid var(--amber-bd); color: var(--amber); }
+.cs-stat-badge.green { background: var(--green-tint); border: 1px solid var(--green-bd); color: var(--green); }
+.cs-badge-num { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; }
+
+.cs-section-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 4px; }
+.cs-section-title { font-size: 14px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 10px; margin: 0; }
+.cs-section-dot { width: 8px; height: 8px; border-radius: 50%; }
+.cs-section-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-faint); }
+
+.cs-flight-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media (max-width: 1200px) { .cs-flight-list { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 760px)  { .cs-flight-list { grid-template-columns: minmax(0, 1fr); } }
+.cs-flight-card {
+  background: #fff; border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px; display: flex; flex-direction: column; gap: 10px;
+  box-shadow: var(--shadow-sm); cursor: pointer;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+.cs-flight-card:hover { border-color: var(--cyan); transform: translateY(-1px); }
+.cs-flight-head { display: flex; align-items: center; justify-content: space-between; }
+.cs-req-id { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--cyan); background: var(--cyan-tint); padding: 2px 7px; border-radius: 5px; font-weight: 600; }
+.cs-flight-title { font-size: 14px; font-weight: 500; color: var(--ink); letter-spacing: -0.01em; min-height: 36px; }
+.cs-flight-foot { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; font-family: 'JetBrains Mono', monospace; color: var(--ink-dim); }
+
+.cs-review-wrap {
+  background: linear-gradient(180deg, #FEF3C7, #FFF9E6);
+  border: 1.5px solid var(--amber-bd); border-radius: 14px; padding: 18px;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.08), 0 12px 32px -16px rgba(245, 158, 11, 0.4);
+}
+.cs-review-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.cs-review-title { font-size: 14px; font-weight: 700; color: var(--amber); display: flex; align-items: center; gap: 10px; letter-spacing: -0.01em; margin: 0; }
+.cs-review-count {
+  background: var(--amber); color: #fff; border-radius: 999px;
+  padding: 2px 9px; font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 700;
+}
+.cs-review-list { display: flex; flex-direction: column; gap: 8px; }
+.cs-review-item {
+  display: grid; grid-template-columns: 100px 1fr auto auto;
+  gap: 14px; align-items: center;
+  padding: 12px 14px; background: #fff; border: 1px solid #FDE68A;
+  border-radius: 10px;
+}
+.cs-review-item-id { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--amber); background: var(--amber-tint); padding: 3px 8px; border-radius: 5px; font-weight: 600; width: fit-content; }
+.cs-review-item-title { font-size: 13.5px; color: var(--ink); font-weight: 500; }
+.cs-review-item-time { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--ink-dim); }
+.cs-review-btn {
+  background: var(--amber); border: none; color: #fff;
+  padding: 7px 14px; border-radius: 8px;
+  font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  box-shadow: 0 1px 2px rgba(217, 119, 6, 0.3);
+}
+.cs-review-btn:hover { background: #B45309; }
+
+.cs-ship-list { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+@media (max-width: 1100px) { .cs-ship-list { grid-template-columns: repeat(5, 1fr); } }
+@media (max-width: 720px)  { .cs-ship-list { grid-template-columns: repeat(3, 1fr); } }
+.cs-ship-card {
+  background: #fff; border: 1px solid var(--green-bd); border-radius: 10px;
+  padding: 12px 10px; display: flex; flex-direction: column;
+  align-items: center; gap: 6px; text-align: center;
+}
+.cs-ship-check { width: 24px; height: 24px; border-radius: 50%; background: var(--green-tint); color: var(--green); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; }
+.cs-ship-id { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--green); font-weight: 600; }
+.cs-ship-title { font-size: 10.5px; color: var(--ink-dim); line-height: 1.3; }
+
+.cs-empty {
+  padding: 28px; background: #fff; border: 1px dashed var(--border-strong);
+  border-radius: 10px; text-align: center; font-size: 13px; color: var(--ink-dim);
+}
+
+.cs-caption {
+  margin-top: 24px; padding: 32px 24px;
+  background: linear-gradient(180deg, transparent, rgba(245, 158, 11, 0.06));
+  border-top: 1px solid var(--amber-bd); text-align: center;
+}
+.cs-caption-line1 { font-family: 'Instrument Serif', serif; font-style: italic; font-size: 28px; color: var(--ink); letter-spacing: -0.02em; line-height: 1.2; }
+.cs-caption-line2 { font-family: 'Instrument Serif', serif; font-style: italic; font-size: 28px; color: var(--amber); letter-spacing: -0.02em; line-height: 1.2; margin-top: 4px; }
+
+/* ───── Coming-soon placeholder for other tabs ───── */
+.coming-soon {
+  min-height: calc(100vh - 60px); display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 18px; padding: 60px 32px; background: var(--surface);
+}
+.coming-soon .cs-icon {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: var(--surface-2); border: 1px dashed var(--border-strong);
+  display: flex; align-items: center; justify-content: center; font-size: 32px;
+}
+.coming-soon h2 { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+.coming-soon p { color: var(--ink-dim); max-width: 480px; text-align: center; font-size: 14px; line-height: 1.6; }
+.coming-soon .cs-list { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+.coming-soon .cs-list span { display: inline-flex; align-items: center; gap: 8px; }
+.coming-soon .cs-list span::before { content: '·'; color: var(--cyan); font-weight: 700; }
 </style>
 </head>
 <body>
+  <div id="root"></div>
 
-<div id="app">
-  <!-- ── Header ──────────────────────────────────────── -->
-  <div class="app">
-    <div class="header">
-      <h1>Code-Requirement Checker</h1>
-      <div class="spacer"></div>
-      <select class="project-select" v-model="currentProjectId" @change="onProjectChange">
-        <option disabled value="">Select Project...</option>
-        <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
-      </select>
-      <button class="btn btn-primary btn-sm" @click="showProjectModal = true">+ New Project</button>
-    </div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
 
-    <!-- ── Main: Kanban + Chat ───────────────────────── -->
-    <div class="main" v-if="currentProjectId">
-      <!-- Kanban Panel -->
-      <div class="panel">
-        <div class="panel-header">
-          <h2>Requirements</h2>
-          <button class="btn btn-outline btn-sm" @click="showAddReq = !showAddReq">+ Add</button>
-        </div>
-        <div class="panel-body" style="display:flex;flex-direction:column;gap:8px;">
-          <!-- Project Background -->
-          <div class="project-bg" v-if="currentProject">
-            <strong>Background:</strong> {{ currentProject.background }}
-          </div>
+  <script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
-          <!-- Add Requirement Form -->
-          <div class="add-req-form" v-if="showAddReq">
-            <input type="text" v-model="newReq.title" placeholder="Requirement title" />
-            <textarea v-model="newReq.description" placeholder="Description..." rows="2"></textarea>
-            <div class="row">
-              <select v-model="newReq.priority">
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-              </select>
-              <button class="btn btn-primary btn-sm" @click="addRequirement" :disabled="!newReq.title">Save</button>
-              <button class="btn btn-outline btn-sm" @click="showAddReq = false">Cancel</button>
-            </div>
-          </div>
+// Detect backend host: use same hostname the page was loaded from
+const API = `http://${window.location.hostname}:8000`;
 
-          <!-- Kanban Columns -->
-          <div class="kanban-columns" v-if="requirements.length">
-            <div class="kanban-col col-todo">
-              <div class="kanban-col-header">Todo <span class="count">{{ todoReqs.length }}</span></div>
-              <div class="kanban-cards">
-                <div class="req-card" v-for="r in todoReqs" :key="r.id">
-                  <div class="req-top">
-                    <span class="req-id">{{ r.id }}</span>
-                    <span class="priority-badge" :class="'priority-' + r.priority">{{ r.priority }}</span>
-                  </div>
-                  <div class="req-title">{{ r.title }}</div>
-                  <div class="req-desc">{{ r.description.length > 80 ? r.description.slice(0, 80) + '...' : r.description }}</div>
-                </div>
-              </div>
-            </div>
-            <div class="kanban-col col-in_progress">
-              <div class="kanban-col-header">In Progress <span class="count">{{ inProgressReqs.length }}</span></div>
-              <div class="kanban-cards">
-                <div class="req-card" v-for="r in inProgressReqs" :key="r.id">
-                  <div class="req-top">
-                    <span class="req-id">{{ r.id }}</span>
-                    <span class="priority-badge" :class="'priority-' + r.priority">{{ r.priority }}</span>
-                  </div>
-                  <div class="req-title">{{ r.title }}</div>
-                  <div class="req-desc">{{ r.description.length > 80 ? r.description.slice(0, 80) + '...' : r.description }}</div>
-                </div>
-              </div>
-            </div>
-            <div class="kanban-col col-done">
-              <div class="kanban-col-header">Done <span class="count">{{ doneReqs.length }}</span></div>
-              <div class="kanban-cards">
-                <div class="req-card" v-for="r in doneReqs" :key="r.id">
-                  <div class="req-top">
-                    <span class="req-id">{{ r.id }}</span>
-                    <span class="priority-badge" :class="'priority-' + r.priority">{{ r.priority }}</span>
-                  </div>
-                  <div class="req-title">{{ r.title }}</div>
-                  <div class="req-desc">{{ r.description.length > 80 ? r.description.slice(0, 80) + '...' : r.description }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
+const TABS = [
+  { id: 'mission',  num: '01', label: 'Mission Control' },
+  { id: 'live',     num: '02', label: 'Live Execution' },
+  { id: 'approval', num: '03', label: 'Approval Gate' },
+  { id: 'ledger',   num: '04', label: 'Decision Ledger' },
+  { id: 'command',  num: '05', label: 'Command Seat' },
+];
 
-          <div class="empty-state" v-else-if="!showAddReq">
-            <div class="icon">📋</div>
-            <div>No requirements yet. Click "+ Add" to create one.</div>
-          </div>
-        </div>
-      </div>
+// ── Project chip color picker (deterministic by project ID) ──────────
+const PROJ_THEMES = ['auth']; // we only style one for now; extend later
+function projTheme(_id) { return 'auth'; }
 
-      <!-- Chat Panel -->
-      <div class="panel">
-        <div class="panel-header">
-          <h2>Team Chat</h2>
-          <button class="btn btn-outline btn-sm" @click="showGitForm = !showGitForm">Git Analyze</button>
-        </div>
+// ───────────────────────────────────────────────────────────────────
+//                          ChatRail
+// ───────────────────────────────────────────────────────────────────
+function ChatRail({ projectId, project, username, role, setRole, members, onPlanCreated }) {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const [aiTyping, setAiTyping] = useState(false);
+  const bodyRef = useRef(null);
 
-        <!-- Messages -->
-        <div class="chat-messages" ref="chatContainer">
-          <div class="empty-state" v-if="!messages.length && !chatLoading">
-            <div class="icon">💬</div>
-            <div>Start a conversation. Switch roles to chat as PM or Engineer.</div>
-            <div style="font-size:11px;">Paste code/diff as Engineer and AI will analyze it against requirements.</div>
-          </div>
+  // Fetch messages whenever project changes
+  useEffect(() => {
+    if (!projectId) return;
+    fetch(`${API}/api/projects/${projectId}/chat`)
+      .then(r => r.json()).then(d => setMessages(d.messages || []))
+      .catch(() => {});
+  }, [projectId]);
 
-          <div v-for="m in messages" :key="m.id" class="chat-msg" :class="m.role">
-            <div class="chat-avatar">
-              <span v-if="m.role === 'pm'">PM</span>
-              <span v-else-if="m.role === 'engineer'">SE</span>
-              <span v-else>AI</span>
-            </div>
-            <div class="chat-bubble">
-              <div class="role-label">{{ m.role === 'pm' ? 'Product Manager' : m.role === 'engineer' ? 'Engineer' : 'AI Assistant' }}</div>
-              <div class="msg-content" v-html="formatMsg(m.content)"></div>
-              <div class="msg-time">{{ formatTime(m.timestamp) }}</div>
+  // Poll for messages (other users' updates)
+  useEffect(() => {
+    if (!projectId) return;
+    const id = setInterval(() => {
+      if (document.hidden) return;
+      fetch(`${API}/api/projects/${projectId}/chat`)
+        .then(r => r.json())
+        .then(d => setMessages(prev => {
+          // Only update if changed
+          if (prev.length !== (d.messages || []).length) return d.messages || [];
+          return prev;
+        }))
+        .catch(() => {});
+    }, 4000);
+    return () => clearInterval(id);
+  }, [projectId]);
 
-              <!-- Analysis detail toggle -->
-              <template v-if="m.analysis_result">
-                <div class="analysis-toggle" @click="toggleDetail(m.id)">
-                  {{ expandedDetails[m.id] ? '▼ Hide Details' : '▶ View Detailed Analysis' }}
-                </div>
-                <div class="analysis-detail" v-if="expandedDetails[m.id]">
-                  <div class="score-row">
-                    <div class="score-ring" :class="scoreClass(m.analysis_result.overall_score)">
-                      {{ m.analysis_result.overall_score }}
-                    </div>
-                    <div>
-                      <div style="font-weight:600;">{{ m.analysis_result.summary }}</div>
-                    </div>
-                  </div>
-                  <div v-for="rr in m.analysis_result.requirements" :key="rr.requirement_id" class="detail-req" :class="'status-' + rr.status">
-                    <div class="dr-head">
-                      <span style="font-weight:600;">{{ rr.requirement_id }}</span>
-                      <span class="status-tag" :class="rr.status">{{ formatStatus(rr.status) }}</span>
-                      <span style="color:var(--text-dim);">{{ rr.confidence }}%</span>
-                    </div>
-                    <div style="font-size:12px;margin-bottom:4px;">{{ rr.requirement_title }}</div>
-                    <div v-if="rr.evidence && rr.evidence.length">
-                      <div style="font-size:11px;color:var(--text-dim);font-weight:600;">Evidence:</div>
-                      <ul><li v-for="e in rr.evidence">{{ e }}</li></ul>
-                    </div>
-                    <div v-if="rr.gaps && rr.gaps.length">
-                      <div style="font-size:11px;color:var(--red);font-weight:600;">Gaps:</div>
-                      <ul><li v-for="g in rr.gaps" class="gap-text">{{ g }}</li></ul>
-                    </div>
-                    <div v-if="rr.suggestions && rr.suggestions.length">
-                      <div style="font-size:11px;color:var(--text-dim);font-weight:600;">Suggestions:</div>
-                      <ul><li v-for="s in rr.suggestions">{{ s }}</li></ul>
-                    </div>
-                  </div>
-                </div>
-              </template>
-            </div>
-          </div>
+  // Autoscroll
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, aiTyping]);
 
-          <!-- Typing indicator -->
-          <div class="typing-indicator" v-if="chatLoading">
-            <div class="chat-avatar" style="background:rgba(168,85,247,0.2);color:var(--purple);">AI</div>
-            <div class="typing-dots"><span></span><span></span><span></span></div>
-          </div>
-        </div>
+  const send = useCallback(async () => {
+    if (!input.trim() || sending || !projectId) return;
+    const text = input.trim();
+    setInput('');
+    setSending(true);
+    setAiTyping(true);
 
-        <!-- Git mini form -->
-        <div class="git-form" v-if="showGitForm" style="margin:0 12px;">
-          <div class="field">
-            <label>Repo Path</label>
-            <input type="text" v-model="gitRepoPath" placeholder="/path/to/repo" />
-          </div>
-          <div class="field">
-            <label>Commit SHA (optional)</label>
-            <input type="text" v-model="gitCommitSha" placeholder="HEAD" />
-          </div>
-          <button class="btn btn-primary btn-sm" @click="analyzeGit" :disabled="!gitRepoPath || chatLoading">Analyze</button>
-        </div>
+    // Detect "@AI" mention → also trigger plan generation after chat
+    const wantsPlan = /@ai\b/i.test(text);
 
-        <!-- Input -->
-        <div class="chat-input-area">
-          <div class="role-toggle">
-            <button :class="{ 'active-pm': chatRole === 'pm' }" @click="chatRole = 'pm'">PM</button>
-            <button :class="{ 'active-engineer': chatRole === 'engineer' }" @click="chatRole = 'engineer'">Engineer</button>
-          </div>
-          <div class="chat-input-row">
-            <textarea
-              v-model="chatInput"
-              :placeholder="chatRole === 'engineer' ? 'Paste code/diff or ask a question...' : 'Ask about requirements, progress...'"
-              @keydown.enter.exact.prevent="sendMessage"
-              rows="1"
-            ></textarea>
-            <button class="send-btn" @click="sendMessage" :disabled="!chatInput.trim() || chatLoading">Send</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- No project selected -->
-    <div class="empty-state" v-else style="flex:1;">
-      <div class="icon">📁</div>
-      <div>Select a project or create a new one to get started.</div>
-    </div>
-  </div>
-
-  <!-- ── Project Modal ───────────────────────────────── -->
-  <div class="modal-overlay" v-if="showProjectModal" @click.self="showProjectModal = false">
-    <div class="modal">
-      <h3>Create New Project</h3>
-      <div class="field">
-        <label>Project Name</label>
-        <input type="text" v-model="newProject.name" placeholder="e.g., User System v2" />
-      </div>
-      <div class="field">
-        <label>Background</label>
-        <textarea v-model="newProject.background" placeholder="What problem does this project solve? What are the goals?" rows="4"></textarea>
-      </div>
-      <div class="actions">
-        <button class="btn btn-outline" @click="showProjectModal = false">Cancel</button>
-        <button class="btn btn-primary" @click="createProject" :disabled="!newProject.name">Create</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-<script>
-const API = 'http://localhost:8000'
-
-const { createApp, ref, computed, watch, nextTick, reactive } = Vue
-
-createApp({
-  setup() {
-    // ── Project state ───────────────────────────────
-    const projects = ref([])
-    const currentProjectId = ref('')
-    const showProjectModal = ref(false)
-    const newProject = reactive({ name: '', background: '' })
-
-    const currentProject = computed(() =>
-      projects.value.find(p => p.id === currentProjectId.value)
-    )
-
-    // ── Requirement state ───────────────────────────
-    const requirements = ref([])
-    const showAddReq = ref(false)
-    const newReq = reactive({ title: '', description: '', priority: 'medium' })
-
-    const todoReqs = computed(() => requirements.value.filter(r => r.status === 'todo'))
-    const inProgressReqs = computed(() => requirements.value.filter(r => r.status === 'in_progress'))
-    const doneReqs = computed(() => requirements.value.filter(r => r.status === 'done'))
-
-    // ── Chat state ──────────────────────────────────
-    const messages = ref([])
-    const chatRole = ref('engineer')
-    const chatInput = ref('')
-    const chatLoading = ref(false)
-    const chatContainer = ref(null)
-    const expandedDetails = reactive({})
-
-    // Git form
-    const showGitForm = ref(false)
-    const gitRepoPath = ref('')
-    const gitCommitSha = ref('')
-
-    // ── API calls ───────────────────────────────────
-    async function fetchProjects() {
-      try {
-        const res = await fetch(`${API}/api/projects`)
-        const data = await res.json()
-        projects.value = data.projects
-        if (projects.value.length && !currentProjectId.value) {
-          currentProjectId.value = projects.value[0].id
-        }
-      } catch (e) { console.error('fetchProjects:', e) }
-    }
-
-    async function createProject() {
-      try {
-        const res = await fetch(`${API}/api/projects`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newProject.name, background: newProject.background }),
-        })
-        const p = await res.json()
-        projects.value.push(p)
-        currentProjectId.value = p.id
-        showProjectModal.value = false
-        newProject.name = ''
-        newProject.background = ''
-        fetchRequirements()
-        fetchMessages()
-      } catch (e) { console.error('createProject:', e) }
-    }
-
-    async function fetchRequirements() {
-      if (!currentProjectId.value) return
-      try {
-        const res = await fetch(`${API}/api/projects/${currentProjectId.value}/requirements`)
-        const data = await res.json()
-        requirements.value = data.requirements
-      } catch (e) { console.error('fetchRequirements:', e) }
-    }
-
-    async function addRequirement() {
-      if (!newReq.title) return
-      try {
-        await fetch(`${API}/api/projects/${currentProjectId.value}/requirements`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: newReq.title, description: newReq.description, priority: newReq.priority }),
-        })
-        newReq.title = ''
-        newReq.description = ''
-        newReq.priority = 'medium'
-        showAddReq.value = false
-        fetchRequirements()
-      } catch (e) { console.error('addRequirement:', e) }
-    }
-
-    async function fetchMessages() {
-      if (!currentProjectId.value) return
-      try {
-        const res = await fetch(`${API}/api/projects/${currentProjectId.value}/chat`)
-        const data = await res.json()
-        messages.value = data.messages
-        scrollToBottom()
-      } catch (e) { console.error('fetchMessages:', e) }
-    }
-
-    async function sendMessage() {
-      const text = chatInput.value.trim()
-      if (!text || chatLoading.value) return
-      chatInput.value = ''
-      chatLoading.value = true
-
-      try {
-        const res = await fetch(`${API}/api/projects/${currentProjectId.value}/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ role: chatRole.value, content: text }),
-        })
-        if (!res.ok) {
-          const err = await res.json()
-          alert('Error: ' + (err.detail || 'Unknown error'))
-          return
-        }
-        const data = await res.json()
-        messages.value.push(data.user_message)
-        messages.value.push(data.ai_message)
-
-        // If analysis happened, refresh kanban
-        if (data.ai_message.analysis_result) {
-          fetchRequirements()
-        }
-        scrollToBottom()
-      } catch (e) {
-        console.error('sendMessage:', e)
-        alert('Failed to send message')
-      } finally {
-        chatLoading.value = false
+    try {
+      const res = await fetch(`${API}/api/projects/${projectId}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role, content: text, username }),
+      });
+      const data = await res.json();
+      if (data.user_message && data.ai_message) {
+        setMessages(prev => [...prev, data.user_message, data.ai_message]);
       }
-    }
 
-    async function analyzeGit() {
-      if (!gitRepoPath.value || chatLoading.value) return
-      chatLoading.value = true
-      try {
-        const res = await fetch(`${API}/api/projects/${currentProjectId.value}/analyze/git`, {
+      // If user @AI'd, kick off plan generation. The Mission Control screen
+      // listens via onPlanCreated and will display it.
+      if (wantsPlan && onPlanCreated) {
+        onPlanCreated.start();   // signal drafting started
+        const planRes = await fetch(`${API}/api/projects/${projectId}/plans`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ repo_path: gitRepoPath.value, commit_sha: gitCommitSha.value || null }),
-        })
-        if (!res.ok) {
-          const err = await res.json()
-          alert('Error: ' + (err.detail || 'Unknown error'))
-          return
+          body: JSON.stringify({ request: text.replace(/@ai/gi, '').trim(), requested_by: username || role }),
+        });
+        if (planRes.ok) {
+          const plan = await planRes.json();
+          onPlanCreated.done(plan);
+        } else {
+          onPlanCreated.fail();
         }
-        const data = await res.json()
-        messages.value.push(data.engineer_message)
-        messages.value.push(data.ai_message)
-        fetchRequirements()
-        showGitForm.value = false
-        scrollToBottom()
-      } catch (e) {
-        console.error('analyzeGit:', e)
-        alert('Failed to analyze git repo')
-      } finally {
-        chatLoading.value = false
       }
+    } catch (e) {
+      console.error('send error', e);
+    } finally {
+      setSending(false);
+      setAiTyping(false);
     }
+  }, [input, sending, projectId, role, username, onPlanCreated]);
 
-    // ── Helpers ──────────────────────────────────────
-    function onProjectChange() {
-      fetchRequirements()
-      fetchMessages()
-    }
+  return (
+    <aside className="chat-rail">
+      <div className="cr-head">
+        <div className="cr-title-row">
+          <div className="cr-title"># Project Team</div>
+          {project && (
+            <span className={`proj ${projTheme(project.id)}`}>
+              <span className="pdot"></span>{project.name.length > 22 ? project.name.slice(0, 22) + '…' : project.name}
+            </span>
+          )}
+        </div>
+        <div className="cr-members">
+          <div style={{ display: 'flex' }}>
+            <span className="avatar cyan sm">PM</span>
+            <span className="avatar blue sm" style={{ marginLeft: -6 }}>EN</span>
+            <span className="avatar purple sm" style={{ marginLeft: -6 }}>AI</span>
+          </div>
+          <span style={{ fontSize: 12, color: 'var(--ink-dim)' }}>{members}</span>
+          <span className="pill gray" style={{ marginLeft: 'auto' }}><span className="pdot"></span>online</span>
+        </div>
+      </div>
 
-    function scrollToBottom() {
-      nextTick(() => {
-        if (chatContainer.value) {
-          chatContainer.value.scrollTop = chatContainer.value.scrollHeight
-        }
-      })
-    }
+      <div className="cr-body" ref={bodyRef}>
+        {messages.length === 0 && (
+          <div style={{ textAlign: 'center', color: 'var(--ink-faint)', fontSize: 13, padding: '40px 12px' }}>
+            <div style={{ fontSize: 26, marginBottom: 8 }}>💬</div>
+            Tag <span className="cr-mention purple">@AI</span> with a task to draft a plan.<br />
+            E.g.: <em>"@AI optimize our login speed"</em>
+          </div>
+        )}
+        {messages.map((m, i) => <CRMessage key={m.id || i} m={m} isLatest={i === messages.length - 1 && m.role === 'ai'} />)}
+        {aiTyping && <CRTyping who="AI" />}
+      </div>
 
-    function toggleDetail(msgId) {
-      expandedDetails[msgId] = !expandedDetails[msgId]
-    }
+      <div className="cr-composer">
+        <div className="cr-role-pick">
+          <button className={role === 'pm' ? 'active pm' : ''} onClick={() => setRole('pm')}>PM</button>
+          <button className={role === 'engineer' ? 'active eng' : ''} onClick={() => setRole('engineer')}>Eng</button>
+        </div>
+        <textarea
+          className="cr-input"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+          placeholder="Type a message…  (use @AI to delegate a task)"
+          rows={1}
+          disabled={!projectId}
+        />
+        <button className="btn btn-primary" onClick={send} disabled={!input.trim() || sending || !projectId} style={{ padding: '8px 14px' }}>
+          {sending ? '...' : '↵'}
+        </button>
+      </div>
+    </aside>
+  );
+}
 
-    function scoreClass(score) {
-      if (score >= 70) return 'high'
-      if (score >= 40) return 'medium'
-      return 'low'
-    }
+function CRMessage({ m, isLatest }) {
+  const meta = m.role === 'pm'
+    ? { color: 'cyan', initials: (m.username || 'PM').slice(0, 2).toUpperCase(), name: m.username || 'PM', role: 'PM', nameColor: 'var(--cyan)' }
+    : m.role === 'engineer'
+    ? { color: 'blue', initials: (m.username || 'EN').slice(0, 2).toUpperCase(), name: m.username || 'Engineer', role: 'ENG', nameColor: 'var(--blue)' }
+    : { color: 'purple', initials: 'AI', name: 'AI Agent', role: 'Agent', nameColor: 'var(--purple)' };
 
-    function formatStatus(s) {
-      return { match: 'Match', partial: 'Partial', gap: 'Gap', clarification_needed: 'Needs Clarification' }[s] || s
-    }
+  const isAI = m.role === 'ai' || m.role === 'ai_system';
+  const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
-    function formatTime(ts) {
-      if (!ts) return ''
-      const d = new Date(ts)
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
+  // Render @mentions inline
+  const renderContent = (text) => {
+    if (!text) return null;
+    const parts = text.split(/(@\w+)/g);
+    return parts.map((p, i) => {
+      if (/^@AI$/i.test(p)) return <span key={i} className="cr-mention purple">@AI</span>;
+      if (/^@/.test(p))     return <span key={i} className="cr-mention cyan">{p}</span>;
+      return <span key={i}>{p}</span>;
+    });
+  };
 
-    function formatMsg(text) {
-      if (!text) return ''
-      return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/`([^`]+)`/g, '<code style="background:var(--bg);padding:1px 4px;border-radius:3px;font-size:12px;">$1</code>')
-        .replace(/\n/g, '<br>')
-    }
+  return (
+    <div className="cr-msg">
+      <span className={`avatar ${meta.color}`}>{meta.initials}</span>
+      <div className="cr-msg-body">
+        <div className="cr-msg-head">
+          <span className="cr-msg-name" style={{ color: meta.nameColor }}>{meta.name}</span>
+          <span className={isAI ? 'cr-role-ai' : 'cr-role'}>{meta.role}</span>
+          <span className="cr-msg-time">{time}</span>
+          {isAI && isLatest && <span className="pill purple"><span className="pdot"></span>latest</span>}
+        </div>
+        {isAI ? (
+          <div className={`cr-ai-bubble ${isLatest ? 'latest' : ''}`}>{renderContent(m.content)}</div>
+        ) : (
+          <div className="cr-msg-text">{renderContent(m.content)}</div>
+        )}
+      </div>
+    </div>
+  );
+}
 
-    // ── Init ────────────────────────────────────────
-    fetchProjects().then(() => {
-      if (currentProjectId.value) {
-        fetchRequirements()
-        fetchMessages()
-      }
-    })
+function CRTyping({ who }) {
+  return (
+    <div className="cr-msg cr-typing">
+      <span className="avatar purple">{who}</span>
+      <div className="cr-typing-bubble">
+        <span className="cr-tdot" style={{ animationDelay: '0ms' }}></span>
+        <span className="cr-tdot" style={{ animationDelay: '150ms' }}></span>
+        <span className="cr-tdot" style={{ animationDelay: '300ms' }}></span>
+      </div>
+    </div>
+  );
+}
 
-    return {
-      projects, currentProjectId, currentProject, showProjectModal, newProject,
-      requirements, showAddReq, newReq, todoReqs, inProgressReqs, doneReqs,
-      messages, chatRole, chatInput, chatLoading, chatContainer, expandedDetails,
-      showGitForm, gitRepoPath, gitCommitSha,
-      createProject, fetchRequirements, addRequirement, fetchMessages,
-      sendMessage, analyzeGit, onProjectChange, toggleDetail,
-      scoreClass, formatStatus, formatTime, formatMsg,
-    }
+// ───────────────────────────────────────────────────────────────────
+//                       Mission Control
+// ───────────────────────────────────────────────────────────────────
+function MissionControl({ project, plan, planDrafting, onApprove, onSwitchTab }) {
+  if (!project) {
+    return (
+      <div className="coming-soon">
+        <div className="cs-icon">📁</div>
+        <h2>Select a project to get started</h2>
+        <p>Pick a project from the top-right dropdown, or create one. Then delegate a task in the chat — Mission Control will show the AI-drafted plan here.</p>
+      </div>
+    );
   }
-}).mount('#app')
-</script>
+  return (
+    <div className="mc-plan-col">
+      <div className={`mc-empty ${(plan || planDrafting) ? 'hide' : ''}`}>
+        <div className="mc-orb"><div className="mc-orb-inner">AI</div></div>
+        <div className="mc-empty-label">Awaiting plan</div>
+        <div className="mc-empty-title">The plan canvas is empty until AI drafts a proposal</div>
+        <div className="mc-empty-sub">Tag <span className="cr-mention purple">@AI</span> in the chat on the left and describe the task. AI will draft an actionable plan with subtasks for your approval.</div>
+      </div>
+      {planDrafting && !plan && <MCPlanDrafting />}
+      {plan && <MCPlanCard plan={plan} project={project} onApprove={onApprove} onSwitchTab={onSwitchTab} />}
+    </div>
+  );
+}
+
+function MCPlanDrafting() {
+  return (
+    <div className="mc-drafting">
+      <div className="mc-drafting-head">
+        <div className="mc-orb sm"><div className="mc-orb-inner">AI</div></div>
+        <div>
+          <div className="mc-drafting-label">AI is drafting plan…</div>
+          <div className="mc-drafting-sub">Analyzing request · breaking down subtasks · estimating effort</div>
+        </div>
+      </div>
+      <div className="mc-drafting-rows">
+        {[0,1,2,3].map(i => (
+          <div key={i} className="mc-skel-row" style={{ animationDelay: `${i * 120}ms` }}>
+            <div className="mc-skel-circle"></div>
+            <div className="mc-skel-bar" style={{ flex: 1, height: 12 }}></div>
+            <div className="mc-skel-bar" style={{ width: 60, height: 12 }}></div>
+            <div className="mc-skel-bar" style={{ width: 36, height: 12 }}></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MCPlanCard({ plan, project, onApprove, onSwitchTab }) {
+  const totalEst = plan.subtasks.length;
+  return (
+    <div className="mc-plan-wrap">
+      <div className="mc-plan-lead">
+        <span className="label-mono">Plan · Generated by AI{plan.version > 1 ? ` · revised v${plan.version}` : ''}</span>
+        <span style={{ flex: 1, height: 1, background: 'var(--border)' }}></span>
+      </div>
+      <div className="mc-plan-card">
+        <div className="mc-plan-header">
+          <div style={{ marginBottom: 12 }}>
+            <span className={`proj ${projTheme(project.id)} lg`}><span className="pdot"></span>🏷 {project.name}</span>
+          </div>
+          <div className="mc-plan-id-row">
+            <span className="mc-req-id">{plan.id.slice(0, 8).toUpperCase()}</span>
+            <span className="pill amber"><span className="pdot"></span>Oversight Gate #1</span>
+            <span className="mc-version-tag">PLAN v{plan.version}</span>
+            {plan.status === 'approved' && <span className="pill green"><span className="pdot"></span>Approved</span>}
+          </div>
+          <h2 className="mc-plan-title">{plan.title}</h2>
+          <div className="mc-plan-sub">
+            <span className="avatar purple sm">AI</span>
+            <span><strong style={{ color: 'var(--ink)' }}>Plan v{plan.version}</strong> · Drafted from: <em>"{plan.request.length > 100 ? plan.request.slice(0, 100) + '…' : plan.request}"</em></span>
+          </div>
+          {plan.summary && <div className="mc-plan-summary">{plan.summary}</div>}
+          {plan.change_note && plan.version > 1 && (
+            <div className="mc-promo-note">
+              <span>↑</span>
+              <span>{plan.change_note}</span>
+            </div>
+          )}
+        </div>
+        <div className="mc-section-head">
+          <span className="label-mono">Subtasks · ordered by priority</span>
+          <span style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'JetBrains Mono, monospace' }}>{totalEst} items</span>
+        </div>
+        <div className="mc-subtask-list">
+          {plan.subtasks.map((t, i) => (
+            <div key={t.id} className={`mc-subtask-row ${t.promoted ? 'flash' : ''}`} style={{ animationDelay: `${i * 60}ms` }}>
+              <span className="mc-checkbox"></span>
+              <span className="mc-subtask-title">{t.title}</span>
+              <span className="mc-owner">
+                <span className="avatar blue sm">EN</span>
+                <span style={{ fontSize: 12, color: 'var(--ink-dim)' }}>@Engineer</span>
+              </span>
+              <span className="mc-time-cell">{t.estimated_time}</span>
+              <span className={`priority ${t.priority.toLowerCase()}`}>{t.priority}</span>
+            </div>
+          ))}
+        </div>
+        <div className="mc-action-bar">
+          <div style={{ display: 'flex', gap: 10 }}>
+            {plan.status !== 'approved' ? (
+              <button className="btn btn-primary" onClick={() => onApprove && onApprove(plan)}>
+                ✓ Approve Plan v{plan.version}
+              </button>
+            ) : (
+              <button className="btn btn-primary" onClick={() => onSwitchTab && onSwitchTab('live')}>
+                → Continue to Live Execution
+              </button>
+            )}
+            <button className="btn btn-outline">✏ Edit</button>
+          </div>
+          <button className="btn btn-danger">✗ Reject</button>
+        </div>
+      </div>
+      <p className="mc-caption">Nothing executes until you approve the plan.</p>
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────
+//                       Live Execution
+// ───────────────────────────────────────────────────────────────────
+function LiveExecution({ project, plan, executing, artifacts, onSwitchTab }) {
+  if (!plan) {
+    return (
+      <div className="coming-soon">
+        <div className="cs-icon">⚡</div>
+        <h2>No active plan</h2>
+        <p>Once you approve a plan in Mission Control, AI will start executing it here in real time.</p>
+      </div>
+    );
+  }
+
+  // Executing state: AI is working but no artifacts yet
+  if (executing && (!artifacts || artifacts.length === 0)) {
+    return (
+      <div className="le-wrap">
+        <header className="le-header">
+          <div className="le-header-top">
+            <div className="le-titleblock">
+              <div style={{ marginBottom: 6 }}>
+                <span className={`proj ${projTheme(project.id)}`}><span className="pdot"></span>🏷 {project.name}</span>
+              </div>
+              <div className="le-id-row">
+                <span className="le-req-id">{plan.id.slice(0,8).toUpperCase()}</span>
+                <span className="le-working-pill"><span className="pulse-cyan"></span>AI Working</span>
+              </div>
+              <h2 className="le-title">{plan.title}</h2>
+            </div>
+          </div>
+        </header>
+        <div style={{ padding: '0 40px' }}>
+          <div className="le-loading">
+            <div className="le-loading-orb"><div className="le-loading-orb-inner">AI</div></div>
+            <div className="le-loading-label">Executing plan…</div>
+            <div className="le-loading-title">AI is implementing {plan.subtasks.length} subtasks</div>
+            <div className="le-loading-sub">Generating code, writing tests, drafting documentation. This usually takes 20-40 seconds.</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Artifacts ready — animated reveal
+  return <LiveExecutionTimeline project={project} plan={plan} artifacts={artifacts || []} onSwitchTab={onSwitchTab} />;
+}
+
+function LiveExecutionTimeline({ project, plan, artifacts, onSwitchTab }) {
+  // Build phases: Implementation (code) → Testing (tests) → Documentation (docs)
+  const PHASES = [
+    { id: 'impl',  title: 'Technical Implementation', sub: 'Code changes for all subtasks', kind: 'code' },
+    { id: 'tests', title: 'Testing',                  sub: 'Unit + integration tests',      kind: 'tests' },
+    { id: 'docs',  title: 'Documentation',            sub: 'Architecture & impact write-up', kind: 'docs' },
+  ];
+
+  const PHASE_DWELL_MS = 6500;
+  const [stepIdx, setStepIdx] = useState(0);
+  const [allDone, setAllDone] = useState(false);
+  const timersRef = useRef([]);
+
+  useEffect(() => {
+    timersRef.current.forEach(clearTimeout);
+    timersRef.current = [];
+    setStepIdx(0); setAllDone(false);
+
+    let t = 0;
+    PHASES.forEach((_p, i) => {
+      t += PHASE_DWELL_MS;
+      timersRef.current.push(setTimeout(() => {
+        if (i === PHASES.length - 1) setAllDone(true);
+        else setStepIdx(i + 1);
+      }, t));
+    });
+    return () => timersRef.current.forEach(clearTimeout);
+  }, [artifacts.length]);
+
+  const current = PHASES[stepIdx];
+  const currentArtifact = artifacts.find(a => a.kind === current?.kind);
+  const verbForKind = { code: 'writing code', tests: 'running tests', docs: 'writing documentation' };
+
+  return (
+    <div className="le-wrap">
+      <header className="le-header">
+        <div className="le-header-top">
+          <div className="le-titleblock">
+            <div style={{ marginBottom: 6 }}>
+              <span className={`proj ${projTheme(project.id)}`}><span className="pdot"></span>🏷 {project.name}</span>
+            </div>
+            <div className="le-id-row">
+              <span className="le-req-id">{plan.id.slice(0,8).toUpperCase()}</span>
+              <span className="le-working-pill">
+                <span className="pulse-cyan"></span>{allDone ? 'Complete' : 'AI Working'}
+              </span>
+              <span className="le-phase-counter">Phase {allDone ? PHASES.length : stepIdx + 1} of {PHASES.length}</span>
+            </div>
+            <h2 className="le-title">{plan.title}</h2>
+          </div>
+          <div className="le-actions">
+            {allDone && <button className="btn btn-primary" onClick={() => onSwitchTab('approval')}>→ Open Approval Gate</button>}
+          </div>
+        </div>
+      </header>
+
+      <div className={`le-bigstatus ${allDone ? 'done' : ''}`}>
+        <div className="le-bigstatus-left">
+          <span className="le-bigstatus-pulse"></span>
+          <div>
+            <div className="le-bigstatus-eyebrow">AI is currently</div>
+            <div className="le-bigstatus-verb">
+              {allDone ? 'finalizing & handing off for review' : verbForKind[current.kind]}
+              <span className="le-bigstatus-cursor"></span>
+            </div>
+          </div>
+        </div>
+        {!allDone && currentArtifact && (
+          <div className="le-bigstatus-right">
+            <span className="le-bigstatus-filelabel">working on</span>
+            <span className="le-bigstatus-file">{currentArtifact.payload.filename}</span>
+          </div>
+        )}
+      </div>
+
+      <section className="le-body">
+        <aside className="le-tasks">
+          <div className="le-tasks-head">
+            <span className="label-mono">Workflow</span>
+            <span style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'JetBrains Mono, monospace' }}>
+              {allDone ? `${PHASES.length}/${PHASES.length}` : `${stepIdx}/${PHASES.length}`}
+            </span>
+          </div>
+          <ol className="le-phase-list">
+            {PHASES.map((p, pi) => {
+              const state = allDone || pi < stepIdx ? 'done' : pi === stepIdx ? 'active' : 'pending';
+              return (
+                <li key={p.id} className={`le-phase le-phase-${state}`}>
+                  <div className="le-phase-row">
+                    <span className="le-phase-num">{state === 'done' ? '✓' : pi + 1}</span>
+                    <div className="le-phase-text">
+                      <div className="le-phase-title">{p.title}</div>
+                      <div className="le-phase-sub">{p.sub}</div>
+                    </div>
+                    {state === 'active' && <span className="le-spin"></span>}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+          {allDone && (
+            <div className="le-handoff">
+              <div className="le-handoff-icon">✓</div>
+              <div>
+                <div className="le-handoff-title">All 3 phases complete</div>
+                <div className="le-handoff-sub">Handing off for review…</div>
+              </div>
+            </div>
+          )}
+        </aside>
+
+        <div className="le-canvas">
+          {!allDone && current.kind === 'code'  && <LECode artifact={artifacts.find(a => a.kind === 'code')} />}
+          {!allDone && current.kind === 'tests' && <LETests artifact={artifacts.find(a => a.kind === 'tests')} />}
+          {!allDone && current.kind === 'docs'  && <LEDocs artifact={artifacts.find(a => a.kind === 'docs')} />}
+          {allDone && <LESummary plan={plan} artifacts={artifacts} onSwitchTab={onSwitchTab} />}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function LECode({ artifact }) {
+  const payload = artifact?.payload || {};
+  const full = payload.content || '// (no code generated)';
+  const [shown, setShown] = useState('');
+  useEffect(() => {
+    setShown('');
+    let i = 0;
+    const id = setInterval(() => {
+      i += Math.max(2, Math.floor(Math.random() * 5));
+      setShown(full.slice(0, i));
+      if (i >= full.length) clearInterval(id);
+    }, 24);
+    return () => clearInterval(id);
+  }, [full]);
+
+  // Colorize +/- lines for diff-like content
+  const renderCode = (txt) => {
+    return txt.split('\n').map((line, i) => {
+      let cls = '';
+      if (line.startsWith('+') && !line.startsWith('+++')) cls = 'add';
+      if (line.startsWith('-') && !line.startsWith('---')) cls = 'del';
+      return <div key={i} className={cls}>{line || ' '}</div>;
+    });
+  };
+
+  return (
+    <div className="le-card">
+      <div className="le-card-head">
+        <span className="le-card-tag">CODE EDITOR</span>
+        <span className="le-card-file">{payload.filename || 'untitled'}</span>
+        <span className="le-card-meta">
+          {payload.deletions !== undefined && <><span style={{ color: '#F87171' }}>−{payload.deletions}</span> / </>}
+          <span style={{ color: '#4ADE80' }}>+{payload.additions || 0}</span>
+        </span>
+      </div>
+      <div className="le-code-block">
+        {renderCode(shown)}<span className="le-cursor"></span>
+      </div>
+    </div>
+  );
+}
+
+function LETests({ artifact }) {
+  const payload = artifact?.payload || {};
+  const items = payload.items || [];
+  const [passed, setPassed] = useState(0);
+  useEffect(() => {
+    setPassed(0);
+    items.forEach((_, i) => {
+      setTimeout(() => setPassed(p => Math.max(p, i + 1)), 280 + i * 480);
+    });
+  }, [items.length]);
+  const allPass = passed >= items.length && items.length > 0;
+
+  return (
+    <div className="le-card">
+      <div className="le-card-head">
+        <span className="le-card-tag">TEST RUNNER</span>
+        <span className="le-card-file">{payload.filename || 'tests'}</span>
+        <span className="le-card-meta" style={{ color: allPass ? 'var(--green)' : 'var(--cyan)' }}>
+          {passed}/{items.length} {allPass ? 'passing ✓' : 'running…'}
+        </span>
+      </div>
+      <div className="le-test-list">
+        {items.map((t, i) => {
+          const state = i < passed ? 'pass' : i === passed ? 'running' : 'pending';
+          return (
+            <div key={i} className={`le-test-row le-test-${state}`}>
+              <span className="le-test-icon">
+                {state === 'pass' ? '✓' : state === 'running' ? <span className="le-spin sm"></span> : '○'}
+              </span>
+              <span className="le-test-name">{t.name}</span>
+              <span className="le-test-time">{state === 'pass' ? `${t.duration_ms || Math.floor(20 + Math.random()*80)}ms` : ''}</span>
+            </div>
+          );
+        })}
+      </div>
+      {allPass && payload.coverage_pct !== undefined && (
+        <div className="le-coverage">
+          <div className="le-coverage-row">
+            <span className="label-mono">Coverage</span>
+            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: 'var(--green)' }}>{payload.coverage_pct}%</span>
+          </div>
+          <div className="progress"><span style={{ width: `${payload.coverage_pct}%` }}></span></div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LEDocs({ artifact }) {
+  const payload = artifact?.payload || {};
+  const full = payload.content || '# (no documentation)';
+  const [shown, setShown] = useState('');
+  useEffect(() => {
+    setShown('');
+    let i = 0;
+    const id = setInterval(() => {
+      i += Math.max(2, Math.floor(Math.random() * 6));
+      setShown(full.slice(0, i));
+      if (i >= full.length) clearInterval(id);
+    }, 18);
+    return () => clearInterval(id);
+  }, [full]);
+
+  return (
+    <div className="le-card">
+      <div className="le-card-head">
+        <span className="le-card-tag">MARKDOWN</span>
+        <span className="le-card-file">{payload.filename || 'doc.md'}</span>
+        <span className="le-card-meta">{shown.split(/\s+/).filter(Boolean).length} words</span>
+      </div>
+      <div className="le-doc-block">
+        <pre>{shown}<span className="le-cursor"></span></pre>
+      </div>
+      <div className="le-doc-foot">
+        <span style={{ color: 'var(--ink-faint)' }}>Will be saved to</span>
+        <span style={{ fontFamily: 'JetBrains Mono, monospace', color: 'var(--ink)' }}>{payload.filename || 'doc.md'}</span>
+      </div>
+    </div>
+  );
+}
+
+function LESummary({ plan, artifacts, onSwitchTab }) {
+  const codeA  = artifacts.find(a => a.kind === 'code')?.payload || {};
+  const testsA = artifacts.find(a => a.kind === 'tests')?.payload || {};
+  const docsA  = artifacts.find(a => a.kind === 'docs')?.payload || {};
+  const impact = plan.execution_impact || {};
+
+  return (
+    <div className="le-card le-summary">
+      <div className="le-summary-head">
+        <div className="le-summary-icon">✓</div>
+        <div>
+          <div className="le-summary-title">Execution complete</div>
+          <div className="le-summary-sub">{plan.execution_summary || `${plan.subtasks.length} subtasks delivered`}</div>
+        </div>
+      </div>
+      <div className="le-summary-grid">
+        <div className="le-summary-card">
+          <div className="le-summary-metric">
+            {impact.delta_pct !== undefined ? `${impact.delta_pct > 0 ? '+' : ''}${impact.delta_pct}%` : `+${codeA.additions || 0}/−${codeA.deletions || 0}`}
+          </div>
+          <div className="le-summary-metric-label">{impact.metric_name || 'lines changed'}</div>
+        </div>
+        <div className="le-summary-card">
+          <div className="le-summary-metric">{testsA.items?.length || 0}/{testsA.items?.length || 0}</div>
+          <div className="le-summary-metric-label">tests passing</div>
+        </div>
+        <div className="le-summary-card">
+          <div className="le-summary-metric">{docsA.word_count || 0}</div>
+          <div className="le-summary-metric-label">words of docs</div>
+        </div>
+      </div>
+      <div className="le-summary-cta">
+        <span className="pulse-cyan"></span>
+        Ready for review.
+        <button className="btn btn-primary le-summary-cta-btn" onClick={() => onSwitchTab('approval')}>
+          → Open Approval Gate
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────
+//                       Approval Gate
+// ───────────────────────────────────────────────────────────────────
+function ApprovalGate({ project, plan, artifacts, onDecision, onSwitchTab }) {
+  const [previewKind, setPreviewKind] = useState(null);  // 'code' | 'tests' | 'docs'
+  const [notes, setNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  if (!project || !plan) {
+    return (
+      <div className="coming-soon">
+        <div className="cs-icon">🟡</div>
+        <h2>Nothing to review yet</h2>
+        <p>The Approval Gate shows AI's completed work for your sign-off. Approve a plan in Mission Control and let execution finish first.</p>
+      </div>
+    );
+  }
+
+  const codeA  = artifacts.find(a => a.kind === 'code')?.payload  || {};
+  const testsA = artifacts.find(a => a.kind === 'tests')?.payload || {};
+  const docsA  = artifacts.find(a => a.kind === 'docs')?.payload  || {};
+  const impact = plan.execution_impact || {};
+  const isShipped = plan.status === 'shipped';
+  const canDecide = plan.status === 'awaiting_review';
+
+  const shippedTime = plan.shipped_at ? new Date(plan.shipped_at).toLocaleString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+  const handleApprove = async () => {
+    setSubmitting(true);
+    await onDecision('approve', notes);
+    setSubmitting(false);
+  };
+  const handleReject = async () => {
+    const reason = prompt('What changes are needed?');
+    if (!reason) return;
+    setSubmitting(true);
+    await onDecision('request_changes', reason);
+    setSubmitting(false);
+  };
+
+  const renderCodeContent = (txt) => {
+    if (!txt) return null;
+    return txt.split('\n').map((line, i) => {
+      let cls = '';
+      if (line.startsWith('+') && !line.startsWith('+++')) cls = 'add';
+      if (line.startsWith('-') && !line.startsWith('---')) cls = 'del';
+      return <div key={i} className={cls}>{line || ' '}</div>;
+    });
+  };
+
+  return (
+    <div className="ag-wrap">
+      <div className="ag-inner">
+        <div className="ag-intro">
+          <span className="label-mono">Oversight Gate · Step 2 of 2</span>
+        </div>
+
+        <div className="ag-card">
+          <div className="ag-header">
+            <div style={{ marginBottom: 12 }}>
+              <span className={`proj ${projTheme(project.id)} lg`}><span className="pdot"></span>🏷 {project.name}</span>
+            </div>
+            <div className="ag-header-row">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="ag-id-row">
+                  <span className="ag-req-id">{plan.id.slice(0, 8).toUpperCase()}</span>
+                  <span className="pill amber"><span className="pdot"></span>Oversight Gate #2</span>
+                  {isShipped && <span className="pill green"><span className="pdot"></span>Shipped</span>}
+                </div>
+                <h2 className="ag-title">{isShipped ? plan.title + ' · Shipped ✓' : 'Ready for your review'}</h2>
+                <div className="ag-sub">
+                  <span className="avatar purple sm">AI</span>
+                  Submitted by <strong style={{ color: 'var(--ink)' }}>AI Agent</strong>
+                  {plan.execution_summary && <> · {plan.execution_summary.slice(0, 100)}{plan.execution_summary.length > 100 ? '…' : ''}</>}
+                </div>
+              </div>
+              <div className="ag-badge">
+                <span className="avatar purple lg">AI</span>
+                <span className="ag-badge-label">AI Agent</span>
+              </div>
+            </div>
+          </div>
+
+          {/* What AI did */}
+          <div className="ag-section">
+            <h3 className="ag-section-title"><span style={{ fontSize: 16 }}>📦</span> What AI did</h3>
+            <div className="ag-did-list">
+              {codeA.filename && <div className="ag-did-item"><span className="ag-check">✓</span>{codeA.additions || 0} lines added in <span className="mono" style={{ color: 'var(--ink)' }}>{codeA.filename.split('/').pop()}</span></div>}
+              {docsA.word_count !== undefined && <div className="ag-did-item"><span className="ag-check">✓</span>{docsA.word_count}-word doc · <span className="mono" style={{ color: 'var(--ink)' }}>{(docsA.filename||'').split('/').pop()}</span></div>}
+              {testsA.items?.length > 0 && <div className="ag-did-item"><span className="ag-check">✓</span>{testsA.items.length} test cases ({testsA.coverage_pct || 0}% coverage)</div>}
+              <div className="ag-did-item"><span className="ag-check">✓</span>Plan v{plan.version} · {plan.subtasks.length} subtasks executed</div>
+            </div>
+          </div>
+
+          {/* Estimated Impact */}
+          {impact.metric_name && (
+            <div className="ag-section">
+              <h3 className="ag-section-title"><span style={{ fontSize: 16 }}>📊</span> Estimated Impact</h3>
+              <div className="ag-impact-grid">
+                <div className="ag-impact-card">
+                  <div className="ag-impact-label">{impact.metric_name}</div>
+                  <div className="ag-impact-row">
+                    <span className="ag-impact-before">{impact.before}</span>
+                    <span className="ag-impact-arrow">→</span>
+                    <span className="ag-impact-after">{impact.after}</span>
+                    <span className={`ag-impact-delta ${impact.delta_pct > 0 ? 'bad' : ''}`}>
+                      {impact.delta_pct > 0 ? '+' : ''}{impact.delta_pct}%
+                    </span>
+                  </div>
+                </div>
+                <div className="ag-impact-card">
+                  <div className="ag-impact-label">Test Coverage</div>
+                  <div className="ag-impact-row">
+                    <span className="ag-impact-after">{testsA.coverage_pct || 0}%</span>
+                    <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--ink-dim)' }}>{testsA.items?.length || 0} cases passing</span>
+                  </div>
+                  <div className="progress"><span style={{ width: `${testsA.coverage_pct || 0}%` }}></span></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Artifacts */}
+          <div className="ag-section">
+            <h3 className="ag-section-title"><span style={{ fontSize: 16 }}>🔗</span> Artifacts</h3>
+            <div className="ag-artifacts">
+              <button className="btn btn-outline" onClick={() => setPreviewKind(previewKind === 'code' ? null : 'code')}>
+                {previewKind === 'code' ? '▼' : '▸'} View Code
+              </button>
+              <button className="btn btn-outline" onClick={() => setPreviewKind(previewKind === 'tests' ? null : 'tests')}>
+                {previewKind === 'tests' ? '▼' : '▸'} View Tests
+              </button>
+              <button className="btn btn-outline" onClick={() => setPreviewKind(previewKind === 'docs' ? null : 'docs')}>
+                {previewKind === 'docs' ? '▼' : '▸'} View Doc
+              </button>
+            </div>
+          </div>
+
+          {/* Decision (only if awaiting review) */}
+          {canDecide ? (
+            <div className="ag-decision">
+              <h3 className="ag-section-title"><span style={{ fontSize: 16 }}>🎯</span> Your decision</h3>
+              <div className="ag-decision-row">
+                <button className="ag-approve-btn" onClick={handleApprove} disabled={submitting}>
+                  {submitting ? 'Submitting…' : '✓ Approve & Ship'}
+                </button>
+                <button className="ag-reject-btn" onClick={handleReject} disabled={submitting}>
+                  <span className="ag-reject-title">✏ Request Changes</span>
+                  <span className="ag-reject-sub">send back to AI</span>
+                </button>
+              </div>
+            </div>
+          ) : isShipped ? (
+            <div className="ag-decision">
+              <div className="ag-shipped">
+                <div className="ag-shipped-icon">✓</div>
+                <div>
+                  <div className="ag-shipped-title">Approved & shipped</div>
+                  <div className="ag-shipped-sub">
+                    By {plan.reviewer || 'Engineer'} · {shippedTime}{plan.review_notes ? ` · "${plan.review_notes}"` : ''}
+                  </div>
+                </div>
+                <button className="btn btn-outline" style={{ marginLeft: 'auto' }} onClick={() => onSwitchTab('ledger')}>
+                  → View in Ledger
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="ag-decision">
+              <div style={{ padding: 16, background: 'var(--surface)', border: '1px dashed var(--border-strong)', borderRadius: 10, fontSize: 13, color: 'var(--ink-dim)', textAlign: 'center' }}>
+                Plan status: <strong style={{ color: 'var(--ink-2)' }}>{plan.status}</strong> — no action available yet.
+              </div>
+            </div>
+          )}
+
+          <div className="ag-footer">
+            <span className="ag-footer-line">5-second review. Full context. Final say.</span>
+            {plan.shipped_at && <span className="ag-footer-trace">{shippedTime} · ENG approved & shipped</span>}
+          </div>
+        </div>
+
+        {/* Artifact preview drawer */}
+        {previewKind && (
+          <div className="ag-preview">
+            <div className="ag-preview-head">
+              <div>
+                <div className="label-mono" style={{ marginBottom: 2 }}>{previewKind.toUpperCase()}</div>
+                <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: 'var(--ink)' }}>
+                  {previewKind === 'code' && codeA.filename}
+                  {previewKind === 'tests' && testsA.filename}
+                  {previewKind === 'docs' && docsA.filename}
+                </div>
+              </div>
+              <button className="btn btn-ghost" onClick={() => setPreviewKind(null)}>✕ Close</button>
+            </div>
+            <div className={`ag-preview-body ${previewKind}-mode`}>
+              {previewKind === 'code' && <pre>{renderCodeContent(codeA.content || '(no code)')}</pre>}
+              {previewKind === 'tests' && (
+                <pre>{(testsA.items || []).map((t, i) => `${i+1}. ✓ ${t.name}${t.expected ? '\n   → ' + t.expected : ''}${t.duration_ms ? `  (${t.duration_ms}ms)` : ''}`).join('\n\n')}{testsA.coverage_pct !== undefined ? `\n\n--- Coverage: ${testsA.coverage_pct}% ---` : ''}</pre>
+              )}
+              {previewKind === 'docs' && <pre>{docsA.content || '(no doc)'}</pre>}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────
+//                       Decision Ledger
+// ───────────────────────────────────────────────────────────────────
+function DecisionLedger({ project, entries }) {
+  const [actorFilter, setActorFilter] = useState('all');
+  const [actionFilter, setActionFilter] = useState('all');
+
+  if (!project) {
+    return (
+      <div className="coming-soon">
+        <div className="cs-icon">📜</div>
+        <h2>Select a project</h2>
+        <p>The Decision Ledger shows the audit trail of every plan, approval, execution and review in a project.</p>
+      </div>
+    );
+  }
+
+  // Normalize actor (anything not 'ai'/'pm'/'engineer' is treated as a username)
+  const classifyActor = (a) => {
+    const al = (a || '').toLowerCase();
+    if (al === 'ai') return 'ai';
+    if (al === 'pm') return 'pm';
+    if (al === 'engineer' || al === 'eng') return 'eng';
+    // names sent by usernames — guess by context if needed; default to pm for now
+    return 'pm';
+  };
+
+  const filtered = entries.filter(e => {
+    if (actorFilter !== 'all' && classifyActor(e.actor) !== actorFilter) return false;
+    if (actionFilter !== 'all') {
+      if (actionFilter === 'plans'      && !['plan_drafted','plan_iterated','plan_approved'].includes(e.action)) return false;
+      if (actionFilter === 'executions' && !['execution_started','execution_completed'].includes(e.action))      return false;
+      if (actionFilter === 'reviews'    && !['review_approved','review_rejected'].includes(e.action))            return false;
+    }
+    return true;
+  });
+
+  // Group by day
+  const groups = {};
+  filtered.forEach(e => {
+    const d = new Date(e.timestamp);
+    const key = d.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(e);
+  });
+  const dayKeys = Object.keys(groups);
+  // Most recent first within each day
+  dayKeys.forEach(k => groups[k].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
+  // Most recent days first
+  dayKeys.sort((a, b) => new Date(groups[b][0].timestamp) - new Date(groups[a][0].timestamp));
+
+  const actorLabel = (e) => {
+    const cls = classifyActor(e.actor);
+    if (cls === 'ai') return 'AI Agent';
+    // Use raw name (could be "Sarah", "pm", etc.)
+    return e.actor || 'Unknown';
+  };
+
+  const formatAction = (a) => a.replace(/_/g, ' ');
+
+  return (
+    <div className="dl-wrap">
+      <div className="dl-inner">
+        <div className="dl-head">
+          <h1 className="dl-title">Decision Ledger · {project.name}</h1>
+          <div className="dl-sub">Full audit trail of every plan, execution, and review. Filter to focus on specific actors or action types.</div>
+          <div className="dl-filters">
+            <span className="dl-filter-label">Actor</span>
+            <div className="dl-filter-group">
+              <button className={actorFilter === 'all' ? 'active' : ''} onClick={() => setActorFilter('all')}>All</button>
+              <button className={actorFilter === 'pm' ? 'active' : ''} onClick={() => setActorFilter('pm')}>PM</button>
+              <button className={actorFilter === 'eng' ? 'active' : ''} onClick={() => setActorFilter('eng')}>Engineer</button>
+              <button className={actorFilter === 'ai' ? 'active' : ''} onClick={() => setActorFilter('ai')}>AI</button>
+            </div>
+            <span className="dl-filter-label" style={{ marginLeft: 8 }}>Action</span>
+            <div className="dl-filter-group">
+              <button className={actionFilter === 'all' ? 'active' : ''} onClick={() => setActionFilter('all')}>All</button>
+              <button className={actionFilter === 'plans' ? 'active' : ''} onClick={() => setActionFilter('plans')}>Plans</button>
+              <button className={actionFilter === 'executions' ? 'active' : ''} onClick={() => setActionFilter('executions')}>Executions</button>
+              <button className={actionFilter === 'reviews' ? 'active' : ''} onClick={() => setActionFilter('reviews')}>Reviews</button>
+            </div>
+            <span style={{ marginLeft: 'auto', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', color: 'var(--ink-faint)' }}>
+              {filtered.length} of {entries.length} entries
+            </span>
+          </div>
+        </div>
+
+        {filtered.length === 0 ? (
+          <div className="dl-empty">
+            <div style={{ fontSize: 32, marginBottom: 12 }}>📜</div>
+            <div>No entries match this filter.</div>
+            <div style={{ fontSize: 12, marginTop: 6 }}>Try changing the actor or action filter.</div>
+          </div>
+        ) : (
+          dayKeys.map(day => (
+            <div key={day} className="dl-day-group">
+              <div className="dl-day-header">{day}</div>
+              <div className="dl-timeline">
+                {groups[day].map(e => {
+                  const cls = classifyActor(e.actor);
+                  const time = new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  return (
+                    <div key={e.id} className={`dl-entry ${cls}`}>
+                      <div className="dl-entry-head">
+                        <span className="dl-time">{time}</span>
+                        <span className={`dl-actor ${cls}`}>{actorLabel(e)}</span>
+                        <span className={`dl-action-pill ${e.action}`}>{formatAction(e.action)}</span>
+                        {e.plan_id && (
+                          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10.5, color: 'var(--ink-faint)' }}>
+                            plan {e.plan_id.slice(0, 8)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="dl-summary">{e.summary}</div>
+                      {e.meta && Object.keys(e.meta).length > 0 && (
+                        <div className="dl-meta">{JSON.stringify(e.meta)}</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────
+//                       Command Seat
+// ───────────────────────────────────────────────────────────────────
+function CommandSeat({ dashboard, username, onJumpToReview }) {
+  if (!dashboard) {
+    return (
+      <div className="coming-soon">
+        <div className="cs-icon">🎛</div>
+        <h2>Loading…</h2>
+      </div>
+    );
+  }
+  const { in_flight, awaiting_review, shipped_today, shipped_all, stats } = dashboard;
+  const initials = (username || 'YO').slice(0, 2).toUpperCase();
+  const heroName = username ? `${username}'s Workspace` : 'Your Workspace';
+
+  return (
+    <div className="cs-wrap">
+      <div className="cs-grid">
+        {/* Sidebar */}
+        <aside className="cs-side">
+          <div className="cs-side-card">
+            <div className="cs-side-title">Today's stats</div>
+            <div className="cs-stat-row">
+              <div className="cs-stat"><span className="cs-stat-label">Tasks shipped</span><span className="cs-stat-val green">{stats.shipped_today_count}</span></div>
+              <div className="cs-stat"><span className="cs-stat-label">Awaiting review</span><span className="cs-stat-val amber">{stats.awaiting_review_count}</span></div>
+              <div className="cs-stat"><span className="cs-stat-label">AI in flight</span><span className="cs-stat-val cyan">{stats.in_flight_count}</span></div>
+              <div className="cs-stat"><span className="cs-stat-label">Total plans</span><span className="cs-stat-val">{stats.total_plans}</span></div>
+            </div>
+          </div>
+          <div className="cs-quote-card">
+            "10× the output. Same engineer."
+          </div>
+        </aside>
+
+        {/* Main */}
+        <div className="cs-main">
+          <header className="cs-header">
+            <div className="cs-header-top">
+              <span className="avatar blue lg">{initials}</span>
+              <h2 className="cs-header-title">{heroName}</h2>
+            </div>
+            <div className="cs-header-sub">
+              {dashboard.projects_count} project{dashboard.projects_count !== 1 ? 's' : ''} · {stats.in_flight_count + stats.awaiting_review_count} agents in flight · {stats.shipped_today_count} shipped today
+            </div>
+            <div className="cs-stat-badges">
+              <span className="cs-stat-badge cyan"><span className="pulse-cyan"></span><span className="cs-badge-num">{stats.in_flight_count}</span> In Flight</span>
+              <span className="cs-stat-badge amber">🟡 <span className="cs-badge-num">{stats.awaiting_review_count}</span> Awaiting Review</span>
+              <span className="cs-stat-badge green">✅ <span className="cs-badge-num">{stats.shipped_today_count}</span> Shipped Today</span>
+            </div>
+          </header>
+
+          {/* In flight */}
+          <section>
+            <div className="cs-section-header">
+              <h3 className="cs-section-title"><span className="cs-section-dot" style={{ background: 'var(--cyan-soft)' }}></span>In Flight (by AI)</h3>
+              <span className="cs-section-meta">{in_flight.length} active</span>
+            </div>
+            {in_flight.length === 0 ? (
+              <div className="cs-empty">No plans executing right now. Approve a plan in Mission Control to start one.</div>
+            ) : (
+              <div className="cs-flight-list">
+                {in_flight.slice(0, 6).map(f => (
+                  <div key={f.plan_id} className="cs-flight-card">
+                    <div className="cs-flight-head">
+                      <span className="cs-req-id">{f.plan_id.slice(0, 8).toUpperCase()}</span>
+                      <span className="pill cyan"><span className="pdot"></span>v{f.version}</span>
+                    </div>
+                    <div className="cs-flight-title">{f.title}</div>
+                    <div><span className="proj auth"><span className="pdot"></span>{f.project_name}</span></div>
+                    <div className="progress"><span style={{ width: '60%' }}></span></div>
+                    <div className="cs-flight-foot">
+                      <span>⏳ executing</span>
+                      <span style={{ color: 'var(--purple)' }}>· AI Agent</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Needs review */}
+          {awaiting_review.length > 0 && (
+            <section className="cs-review-wrap">
+              <div className="cs-review-head">
+                <h3 className="cs-review-title">
+                  🟡 Needs your review <span className="cs-review-count">{awaiting_review.length}</span>
+                </h3>
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: 'var(--amber)', fontWeight: 600 }}>
+                  ~{awaiting_review.length * 5}s of your time
+                </span>
+              </div>
+              <div className="cs-review-list">
+                {awaiting_review.slice(0, 6).map(r => (
+                  <div key={r.plan_id} className="cs-review-item">
+                    <span className="cs-review-item-id">{r.plan_id.slice(0, 8).toUpperCase()}</span>
+                    <span className="cs-review-item-title">{r.title}</span>
+                    <span className="proj auth"><span className="pdot"></span>{r.project_name}</span>
+                    <button className="cs-review-btn" onClick={() => onJumpToReview(r)}>Review →</button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Shipped today */}
+          {shipped_today.length > 0 && (
+            <section>
+              <div className="cs-section-header">
+                <h3 className="cs-section-title"><span className="cs-section-dot" style={{ background: 'var(--green-soft)' }}></span>Shipped Today</h3>
+                <span className="cs-section-meta">{shipped_today.length} of {stats.shipped_all_count} total</span>
+              </div>
+              <div className="cs-ship-list">
+                {shipped_today.slice(0, 14).map(s => (
+                  <div key={s.plan_id} className="cs-ship-card" title={s.title}>
+                    <span className="cs-ship-check">✓</span>
+                    <span className="cs-ship-id">{s.plan_id.slice(0, 6).toUpperCase()}</span>
+                    <span className="cs-ship-title">{(s.title || '').length > 30 ? s.title.slice(0, 30) + '…' : s.title}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {shipped_all.length === 0 && in_flight.length === 0 && awaiting_review.length === 0 && (
+            <div className="cs-empty" style={{ padding: 40 }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>🎛</div>
+              <div>No plans yet. Go to Mission Control and delegate a task with <span className="cr-mention purple">@AI</span>.</div>
+            </div>
+          )}
+
+          <div className="cs-caption">
+            <div className="cs-caption-line1">From doer to commander.</div>
+            <div className="cs-caption-line2">One human. Many agents. Many times the output.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────
+//                  Stub screens for Phase 1
+// ───────────────────────────────────────────────────────────────────
+function ComingSoon({ icon, title, desc, items }) {
+  return (
+    <div className="coming-soon">
+      <div className="cs-icon">{icon}</div>
+      <h2>{title}</h2>
+      <p>{desc}</p>
+      {items && (
+        <div className="cs-list">
+          {items.map((it, i) => <span key={i}>{it}</span>)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────
+//                          App shell
+// ───────────────────────────────────────────────────────────────────
+function App() {
+  const [active, setActive] = useState('mission');
+  const [projects, setProjects] = useState([]);
+  const [currentProjectId, setCurrentProjectId] = useState(localStorage.getItem('lastProjectId') || '');
+  const [username, setUsername] = useState(localStorage.getItem('username') || '');
+  const [role, setRole] = useState(localStorage.getItem('chatRole') || 'pm');
+  const [plan, setPlan] = useState(null);
+  const [planDrafting, setPlanDrafting] = useState(false);
+  const [executing, setExecuting] = useState(false);
+  const [artifacts, setArtifacts] = useState([]);
+  const [ledger, setLedger] = useState([]);
+  const [dashboard, setDashboard] = useState(null);
+  const [jumpToast, setJumpToast] = useState(null);  // { msg, color } | null
+
+  const currentProject = useMemo(() => projects.find(p => p.id === currentProjectId), [projects, currentProjectId]);
+
+  useEffect(() => { localStorage.setItem('username', username || ''); }, [username]);
+  useEffect(() => { localStorage.setItem('chatRole', role); }, [role]);
+  useEffect(() => { if (currentProjectId) localStorage.setItem('lastProjectId', currentProjectId); }, [currentProjectId]);
+
+  // Load projects (and reset selection if stored ID no longer exists)
+  useEffect(() => {
+    fetch(`${API}/api/projects`).then(r => r.json()).then(d => {
+      const ps = d.projects || [];
+      setProjects(ps);
+      const stillExists = ps.some(p => p.id === currentProjectId);
+      if (!stillExists && ps.length) {
+        setCurrentProjectId(ps[0].id);
+      } else if (!ps.length) {
+        setCurrentProjectId('');
+      }
+    });
+  }, []);
+
+  // When project changes, load its latest plan + artifacts + ledger
+  useEffect(() => {
+    if (!currentProjectId) { setPlan(null); setArtifacts([]); setLedger([]); return; }
+    fetch(`${API}/api/projects/${currentProjectId}/plans`)
+      .then(r => r.json())
+      .then(d => {
+        const plans = d.plans || [];
+        if (plans.length) {
+          const latest = plans[plans.length - 1];
+          setPlan(latest);
+          return fetch(`${API}/api/projects/${currentProjectId}/plans/${latest.id}/artifacts`)
+            .then(r => r.json())
+            .then(d2 => setArtifacts(d2.artifacts || []));
+        } else {
+          setPlan(null);
+          setArtifacts([]);
+        }
+      });
+    fetch(`${API}/api/projects/${currentProjectId}/ledger`)
+      .then(r => r.json())
+      .then(d => setLedger(d.entries || []));
+  }, [currentProjectId]);
+
+  // Poll ledger every 5s so new events surface
+  useEffect(() => {
+    if (!currentProjectId) return;
+    const id = setInterval(() => {
+      if (document.hidden) return;
+      fetch(`${API}/api/projects/${currentProjectId}/ledger`)
+        .then(r => r.json())
+        .then(d => setLedger(prev => {
+          const next = d.entries || [];
+          if (prev.length !== next.length) return next;
+          return prev;
+        }))
+        .catch(() => {});
+    }, 5000);
+    return () => clearInterval(id);
+  }, [currentProjectId]);
+
+  // Fetch dashboard rollup + poll
+  useEffect(() => {
+    const fetchDash = () => {
+      fetch(`${API}/api/dashboard`).then(r => r.json()).then(setDashboard).catch(() => {});
+    };
+    fetchDash();
+    const id = setInterval(() => { if (!document.hidden) fetchDash(); }, 5000);
+    return () => clearInterval(id);
+  }, []);
+
+  // ChatRail uses these callbacks to signal plan lifecycle
+  const planCallbacks = useMemo(() => ({
+    start: () => { setPlanDrafting(true); setPlan(null); setActive('mission'); },
+    done:  (p) => { setPlanDrafting(false); setPlan(p); },
+    fail:  () => { setPlanDrafting(false); },
+  }), []);
+
+  const approvePlan = useCallback(async (p) => {
+    try {
+      const res = await fetch(`${API}/api/projects/${currentProjectId}/plans/${p.id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requested_by: username || role }),
+      });
+      const updated = await res.json();
+      setPlan(updated);
+
+      // Auto-kick off execution and jump to Live Execution
+      setExecuting(true);
+      setArtifacts([]);
+      setJumpToast({ msg: 'AI started execution — jumping to Live Execution', color: 'cyan' });
+      setTimeout(() => setActive('live'), 250);
+      setTimeout(() => setJumpToast(null), 3500);
+
+      // Fire execute in background
+      try {
+        const exRes = await fetch(`${API}/api/projects/${currentProjectId}/plans/${p.id}/execute`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requested_by: 'AI' }),
+        });
+        if (exRes.ok) {
+          const data = await exRes.json();
+          setPlan(data.plan);
+          setArtifacts(data.artifacts || []);
+        } else {
+          const err = await exRes.json().catch(() => ({}));
+          alert('Execution failed: ' + (err.detail || 'unknown error'));
+        }
+      } catch (e) {
+        console.error('execute error', e);
+        alert('Execution failed: network error');
+      } finally {
+        setExecuting(false);
+      }
+    } catch (e) { console.error('approve error', e); }
+  }, [currentProjectId, username, role]);
+
+  const jumpToReview = useCallback(async (planRef) => {
+    // Switch project to the one this plan belongs to, then go to approval tab
+    if (planRef.project_id !== currentProjectId) {
+      setCurrentProjectId(planRef.project_id);
+    }
+    // Fetch the plan + its artifacts
+    try {
+      const [planRes, artRes] = await Promise.all([
+        fetch(`${API}/api/projects/${planRef.project_id}/plans/${planRef.plan_id}`).then(r => r.json()),
+        fetch(`${API}/api/projects/${planRef.project_id}/plans/${planRef.plan_id}/artifacts`).then(r => r.json()),
+      ]);
+      setPlan(planRes);
+      setArtifacts(artRes.artifacts || []);
+    } catch (e) { console.error('jumpToReview', e); }
+    setActive('approval');
+  }, [currentProjectId]);
+
+  const reviewPlan = useCallback(async (decision, notes) => {
+    if (!plan || !currentProjectId) return;
+    try {
+      const res = await fetch(`${API}/api/projects/${currentProjectId}/plans/${plan.id}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision, notes: notes || '', requested_by: username || role }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setPlan(updated);
+        if (decision === 'approve') {
+          setJumpToast({ msg: 'Approved & shipped — see audit trail in Decision Ledger', color: 'amber' });
+          setTimeout(() => setJumpToast(null), 3000);
+        }
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert('Review failed: ' + (err.detail || 'unknown'));
+      }
+    } catch (e) { console.error('review error', e); }
+  }, [plan, currentProjectId, username, role]);
+
+  const createProject = useCallback(async () => {
+    const name = prompt('Project name:');
+    if (!name) return;
+    const background = prompt('Brief project background:') || '';
+    const res = await fetch(`${API}/api/projects`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, background }),
+    });
+    const p = await res.json();
+    setProjects(prev => [...prev, p]);
+    setCurrentProjectId(p.id);
+  }, []);
+
+  const memberLabel = `${username || 'You'} + AI`;
+
+  return (
+    <div className="app">
+      <header className="topbar">
+        <div className="brand">
+          <span className="logo">TB</span>
+          <span className="brand-name">TechBridge AI</span>
+          <span className="ver">v0.5 · DEMO</span>
+        </div>
+        <nav className="nav" role="tablist">
+          {TABS.map(t => (
+            <button
+              key={t.id} role="tab" aria-selected={active === t.id}
+              className={active === t.id ? 'active' : ''}
+              onClick={() => setActive(t.id)}
+            >
+              <span className="num">{t.num}</span>{t.label}
+            </button>
+          ))}
+        </nav>
+        <div className="right">
+          <input className="user-input" placeholder="Your name" value={username} onChange={e => setUsername(e.target.value)} />
+          <select className="project-select" value={currentProjectId} onChange={e => {
+              if (e.target.value === '__new__') { createProject(); }
+              else setCurrentProjectId(e.target.value);
+          }}>
+            <option value="" disabled>Select project…</option>
+            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            <option value="__new__">+ New project…</option>
+          </select>
+          <span className="pulse-status"><span className="dot"></span>System healthy</span>
+        </div>
+      </header>
+
+      <div className="app-body">
+        <ChatRail
+          projectId={currentProjectId}
+          project={currentProject}
+          username={username}
+          role={role}
+          setRole={setRole}
+          members={memberLabel}
+          onPlanCreated={planCallbacks}
+        />
+        <main className="screen">
+          {active === 'mission'  && (
+            <MissionControl
+              project={currentProject}
+              plan={plan}
+              planDrafting={planDrafting}
+              onApprove={approvePlan}
+              onSwitchTab={setActive}
+            />
+          )}
+          {active === 'live' && (
+            <LiveExecution
+              project={currentProject}
+              plan={plan}
+              executing={executing}
+              artifacts={artifacts}
+              onSwitchTab={setActive}
+            />
+          )}
+          {active === 'approval' && (
+            <ApprovalGate
+              project={currentProject}
+              plan={plan}
+              artifacts={artifacts}
+              onDecision={reviewPlan}
+              onSwitchTab={setActive}
+            />
+          )}
+          {active === 'ledger' && (
+            <DecisionLedger project={currentProject} entries={ledger} />
+          )}
+          {active === 'command' && (
+            <CommandSeat dashboard={dashboard} username={username} onJumpToReview={jumpToReview} />
+          )}
+        </main>
+      </div>
+      {jumpToast && (
+        <div className={`jump-toast ${jumpToast.color === 'amber' ? 'amber' : ''}`}>
+          <span className={`jump-dot ${jumpToast.color === 'amber' ? 'amber' : ''}`}></span>
+          {jumpToast.msg}
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
 </body>
 </html>
