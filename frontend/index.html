@@ -1664,6 +1664,24 @@ function ApprovalGate({ project, plan, artifacts, onDecision, onSwitchTab }) {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const openArtifact = async (planObj, target, artifactKind) => {
+    if (!planObj?.id) return;
+    try {
+      const res = await fetch(`${API}/api/projects/${planObj.project_id}/plans/${planObj.id}/open`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target, artifact_kind: artifactKind || null }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert('Open failed: ' + (err.detail || 'unknown'));
+      }
+    } catch (e) {
+      console.error('open error', e);
+      alert('Failed to launch — backend may not have access to system open commands.');
+    }
+  };
+
   if (!project || !plan) {
     return (
       <div className="coming-soon">
@@ -1782,16 +1800,44 @@ function ApprovalGate({ project, plan, artifacts, onDecision, onSwitchTab }) {
           <div className="ag-section">
             <h3 className="ag-section-title"><span style={{ fontSize: 16 }}>🔗</span> Artifacts</h3>
             <div className="ag-artifacts">
-              <button className="btn btn-outline" onClick={() => setPreviewKind(previewKind === 'code' ? null : 'code')}>
-                {previewKind === 'code' ? '▼' : '▸'} View Code
-              </button>
-              <button className="btn btn-outline" onClick={() => setPreviewKind(previewKind === 'tests' ? null : 'tests')}>
-                {previewKind === 'tests' ? '▼' : '▸'} View Tests
-              </button>
-              <button className="btn btn-outline" onClick={() => setPreviewKind(previewKind === 'docs' ? null : 'docs')}>
-                {previewKind === 'docs' ? '▼' : '▸'} View Doc
-              </button>
+              {['code', 'tests', 'docs'].map(kind => {
+                const labels = { code: 'Code', tests: 'Tests', docs: 'Doc' };
+                const hasArtifact = !!artifacts.find(a => a.kind === kind);
+                if (!hasArtifact) return null;
+                return (
+                  <div key={kind} style={{ display: 'inline-flex', alignItems: 'stretch', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-strong)' }}>
+                    <button
+                      style={{ border: 0, background: '#fff', padding: '8px 12px', fontFamily: 'inherit', fontSize: 13, cursor: 'pointer', color: 'var(--ink)' }}
+                      onClick={() => setPreviewKind(previewKind === kind ? null : kind)}
+                      title="Preview inline">
+                      {previewKind === kind ? '▼' : '▸'} View {labels[kind]}
+                    </button>
+                    <button
+                      style={{ border: 0, borderLeft: '1px solid var(--border)', background: '#fff', padding: '8px 10px', fontFamily: 'inherit', fontSize: 12, cursor: 'pointer', color: 'var(--ink-dim)' }}
+                      onClick={() => openArtifact(plan, 'vscode', kind)}
+                      title={`Open ${labels[kind]} in VS Code`}>
+                      🖥
+                    </button>
+                    <button
+                      style={{ border: 0, borderLeft: '1px solid var(--border)', background: '#fff', padding: '8px 10px', fontFamily: 'inherit', fontSize: 12, cursor: 'pointer', color: 'var(--ink-dim)' }}
+                      onClick={() => openArtifact(plan, 'folder', kind)}
+                      title={`Reveal ${labels[kind]} in Finder`}>
+                      📂
+                    </button>
+                  </div>
+                );
+              })}
             </div>
+            {plan.output_dir && (
+              <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--surface-2)', border: '1px dashed var(--border-strong)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 11, color: 'var(--ink-dim)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>Written to disk</span>
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: 'var(--ink)', wordBreak: 'break-all', flex: 1, minWidth: 0 }}>{plan.output_dir}</span>
+                <button className="btn btn-outline btn-sm" style={{ padding: '4px 10px', fontSize: 12 }}
+                  onClick={() => openArtifact(plan, 'folder')}>📂 Reveal in Finder</button>
+                <button className="btn btn-outline btn-sm" style={{ padding: '4px 10px', fontSize: 12 }}
+                  onClick={() => openArtifact(plan, 'vscode')}>🖥 Open in VS Code</button>
+              </div>
+            )}
           </div>
 
           {/* Decision (only if awaiting review) */}

@@ -102,6 +102,10 @@ class PlanReviewRequest(BaseModel):
     requested_by: Optional[str] = None
 
 
+class OpenArtifactRequest(BaseModel):
+    target: str                # "folder" | "vscode" | "finder"
+    artifact_kind: Optional[str] = None   # "code" | "tests" | "docs" (optional, defaults to folder)
+
 
 # ── In-memory Storage ────────────────────────────────────────────────
 
@@ -880,23 +884,52 @@ def execute_plan(project_id: str, plan_id: str, body: PlanExecuteRequest):
         plan["status"] = "approved"  # roll back so user can retry
         raise HTTPException(500, f"Failed to parse AI execution output: {e}")
 
-    # Save artifacts (in-memory only for now)
+    # Save artifacts (in memory + write to disk under generated/<project_id>/<plan_id>/)
     now = datetime.now(timezone.utc).isoformat()
     saved = []
+    # Anchor at the project's backend directory's parent (the repo root)
+    out_root = Path(__file__).resolve().parent.parent / "generated" / project_id / plan_id
+    out_root.mkdir(parents=True, exist_ok=True)
+    written_paths = []
+
     for kind in ("code", "tests", "docs"):
         if kind in result:
-            payload = dict(result[kind])
-            # For tests, serialize items into readable content
-            if kind == "tests" and payload.get("content") is None:
+            payload = dict(result[kind])  # copy so we can mutate
+            content = payload.get("content")
+
+            # For tests, serialize the items into a readable file
+            if kind == "tests" and content is None:
                 lines = []
                 for i, t in enumerate(payload.get("items", []), 1):
                     lines.append(f"// Test {i}: {t.get('name','')}")
                     if t.get("expected"):
                         lines.append(f"//   expected: {t['expected']}")
+                    if t.get("duration_ms"):
+                        lines.append(f"//   duration: {t['duration_ms']}ms")
                     lines.append("")
                 if payload.get("coverage_pct") is not None:
                     lines.append(f"// Coverage: {payload['coverage_pct']}%")
-                payload["content"] = "\n".join(lines)
+                content = "\n".join(lines)
+                payload["content"] = content  # store it back for downstream display too
+
+            # Write to disk if we have a filename + content
+            filename = payload.get("filename") or f"{kind}.txt"
+            # Sanitize filename to avoid path traversal — keep only basename + subdirs under out_root
+            safe_rel = Path(filename)
+            # Strip any leading slashes or '..'
+            safe_parts = [p for p in safe_rel.parts if p not in ("", "/", "..")]
+            safe_rel = Path(*safe_parts) if safe_parts else Path(f"{kind}.txt")
+            disk_path = out_root / safe_rel
+            disk_path.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                if content is not None:
+                    disk_path.write_text(content, encoding="utf-8")
+                    payload["disk_path"] = str(disk_path)
+                    written_paths.append(str(disk_path))
+            except Exception as e:
+                payload["disk_path"] = None
+                payload["write_error"] = str(e)
+
             artifact = {
                 "id": str(uuid.uuid4()),
                 "plan_id": plan_id,
@@ -908,6 +941,21 @@ def execute_plan(project_id: str, plan_id: str, body: PlanExecuteRequest):
             artifacts_db.append(artifact)
             saved.append(artifact)
 
+    # Save a manifest at the plan-folder root for convenience
+    try:
+        manifest = {
+            "project_id": project_id,
+            "plan_id": plan_id,
+            "plan_title": plan["title"],
+            "summary": result.get("summary", ""),
+            "impact": result.get("impact", {}),
+            "files": [str(Path(p).relative_to(out_root)) for p in written_paths],
+            "generated_at": now,
+        }
+        (out_root / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
     # Mark subtasks done (visual completion)
     for s in plan["subtasks"]:
         s["status"] = "done"
@@ -915,13 +963,14 @@ def execute_plan(project_id: str, plan_id: str, body: PlanExecuteRequest):
     plan["status"] = "awaiting_review"
     plan["execution_summary"] = result.get("summary", "")
     plan["execution_impact"] = result.get("impact", {})
+    plan["output_dir"] = str(out_root)
     plan["updated_at"] = datetime.now(timezone.utc).isoformat()
 
     add_ledger_entry(
         project_id, "ai", "execution_completed",
-        f"Execution completed · code + tests + docs generated. {result.get('summary', '')}",
+        f"Execution completed · files written to generated/{project_id}/{plan_id[:8]}/ · {result.get('summary', '')}",
         plan_id=plan_id,
-        meta={"impact": result.get("impact", {})},
+        meta={"impact": result.get("impact", {}), "output_dir": str(out_root), "files": written_paths},
     )
 
     return {"plan": plan, "artifacts": saved}
@@ -933,7 +982,52 @@ def list_artifacts(project_id: str, plan_id: str):
     return {"artifacts": items}
 
 
+@app.post("/api/projects/{project_id}/plans/{plan_id}/open")
+def open_artifact(project_id: str, plan_id: str, body: OpenArtifactRequest):
+    """Open the generated folder (or a specific artifact) in Finder / VS Code.
+    Only allows paths under the generated/ directory for safety."""
+    generated_root = (Path(__file__).resolve().parent.parent / "generated").resolve()
+    plan_dir = (generated_root / project_id / plan_id).resolve()
+    if not plan_dir.exists():
+        raise HTTPException(404, "Plan output directory not found — execute the plan first")
+    # Verify plan_dir is actually inside generated_root (defense-in-depth)
+    if generated_root not in plan_dir.parents and plan_dir != generated_root:
+        raise HTTPException(400, "Refusing to open path outside generated/")
 
+    # Resolve the target path
+    target_path = plan_dir
+    if body.artifact_kind:
+        # Pick the file for that artifact kind
+        for a in artifacts_db:
+            if a["plan_id"] == plan_id and a["project_id"] == project_id and a["kind"] == body.artifact_kind:
+                disk_path = a["payload"].get("disk_path")
+                if disk_path:
+                    candidate = Path(disk_path).resolve()
+                    if generated_root in candidate.parents:
+                        target_path = candidate
+                break
+
+    target = body.target.lower()
+    try:
+        if target in ("folder", "finder"):
+            # macOS: `open <path>` — opens in Finder if dir, or with default app if file
+            # If we want to "reveal" a file in Finder, use `open -R <path>`
+            if target_path.is_file():
+                subprocess.Popen(["open", "-R", str(target_path)])
+            else:
+                subprocess.Popen(["open", str(target_path)])
+        elif target == "vscode":
+            # Need `code` CLI in PATH. Falls back to `open -a "Visual Studio Code"`
+            try:
+                subprocess.Popen(["code", str(target_path)])
+            except FileNotFoundError:
+                subprocess.Popen(["open", "-a", "Visual Studio Code", str(target_path)])
+        else:
+            raise HTTPException(400, f"Unknown target: {body.target}")
+    except FileNotFoundError as e:
+        raise HTTPException(500, f"Cannot launch: {e}")
+
+    return {"opened": str(target_path), "target": target}
 
 
 @app.post("/api/projects/{project_id}/plans/{plan_id}/review")
