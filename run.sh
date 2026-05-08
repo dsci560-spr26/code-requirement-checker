@@ -42,10 +42,21 @@ cd ..
 
 echo ""
 echo "✅ System is running!"
-echo "   Frontend: http://localhost:3000"
-echo "   Backend:  http://localhost:8000"
-echo "   API Docs: http://localhost:8000/docs"
 echo ""
+
+# Get LAN IP so teammates can connect
+LAN_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || hostname -I 2>/dev/null | awk '{print $1}')
+
+echo "   Local access:"
+echo "     Frontend: http://localhost:3000"
+echo "     Backend:  http://localhost:8000"
+echo ""
+if [ -n "$LAN_IP" ]; then
+    echo "   LAN access (share with teammates on same WiFi):"
+    echo "     Frontend: http://${LAN_IP}:3000"
+    echo "     Backend:  http://${LAN_IP}:8000"
+    echo ""
+fi
 echo "Press Ctrl+C to stop both servers."
 
 # Trap to kill both on exit
